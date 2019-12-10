@@ -1,0 +1,8 @@
+{
+    "name": "cryptpoc",
+    "description": "",
+    "version": "1.0.0",
+    "dependencies": {
+        "@types/node": "^12.12.14"
+    }
+}
