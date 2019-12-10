@@ -9,11 +9,10 @@ var algorithmCode = 1;
 var algorithmCodeByteLength = 1;
 var ivLength = aes256BlockSize;
 var tagLength = 24; // from half of sha384 (384/2/8)
+var FIXED_ARRAY = [98, 183, 249, 18, 137, 227, 35, 73, 241, 243, 134, 94, 109, 227, 127, 115, 128, 55, 115, 66, 163, 238, 63, 239, 250, 236, 168, 247, 21, 10, 201, 134];
 function hmacSha256(cek, type, algorithm) {
     var hmac = crypto_1.createHmac('sha256', cek);
     hmac.update(type);
-    hmac.update(algorithm);
-    hmac.update(cek.byteLength.toString());
     return hmac.digest();
 }
 function cipherKeyFromContentEncryptionKey(cek, algorithm) {
@@ -22,9 +21,12 @@ function cipherKeyFromContentEncryptionKey(cek, algorithm) {
 function macKeyFromContentEncryptionKey(cek, algorithm) {
     return hmacSha256(cek, 'Microsoft Teams Vault Message Authentication Code Key', algorithm);
 }
-function generateSymmetric256Key() {
-    
-    // return crypto_1.randomBytes(256 / 8);
+function generateSymmetric256Key(fixed) {
+    if (fixed === void 0) { fixed = false; }
+    if (fixed) {
+        return Buffer.from(FIXED_ARRAY);
+    }
+    return crypto_1.randomBytes(256 / 8);
 }
 exports.generateSymmetric256Key = generateSymmetric256Key;
 function messageAuthenticationCodeFromEncryptedSecret(macKey, associatedData, initializationVector, encryptedSecret) {
@@ -130,13 +132,13 @@ function decryptPrivateKey(passphrase, privateKeyAsString) {
 }
 exports.decryptPrivateKey = decryptPrivateKey;
 function symmetricKeyTest() {
-    var key = generateSymmetric256Key();
+    var key = generateSymmetric256Key(true);
     console.log('Key (' + key.length + ' bytes): ' + key.toString('base64') + " " + key.toString('hex'));
     var cipherKey = cipherKeyFromContentEncryptionKey(key, algorithm);
-    // console.log('ENC_KEY (' + cipherKey.length + ' bytes): ' + cipherKey.toString('base64') + " " + cipherKey.toString('hex'));
-    // var macKey = macKeyFromContentEncryptionKey(key, algorithm);
-    // console.log('MAC_KEY (' + macKey.length + ' bytes): ' + macKey.toString('base64') + " " + macKey.toString('hex'));
-    // var secrets = [
+    console.log('ENC_KEY (' + cipherKey.length + ' bytes): ' + cipherKey.toString('base64') + " " + cipherKey.toString('hex'));
+    // const macKey = macKeyFromContentEncryptionKey(key, algorithm);
+    // console.log('MAC_KEY (' + macKey.length + ' bytes): ' + macKey.toString('base64')+" "+ macKey.toString('hex'));
+    // const secrets = [
     //     'some seriously secret stuff',
     //     '',
     //     '1',
@@ -157,18 +159,18 @@ function symmetricKeyTest() {
     //     '0000000000000000',
     //     generateSymmetric256Key().toString('base64')
     // ];
-    // for (var i = 0; i != secrets.length; ++i) {
-    //     var encryptedPayload = encryptSymmetric256(Buffer.from(secrets[i]), key);
+    // for(var i = 0; i != secrets.length; ++i) {
+    //     const encryptedPayload = encryptSymmetric256(Buffer.from(secrets[i]), key);
     //     console.log(decryptSymmetric256(encryptedPayload, key).toString());
-    //     var message = splitEncryptedMessage(encryptedPayload);
+    //     const message = splitEncryptedMessage(encryptedPayload);
     //     console.log('algorithmCode (1 byte): ' + message.algorithmCode.toString());
     //     console.log('initializationVector (' + message.initializationVector.length + " bytes): " + message.initializationVector.toString('base64') + " " + message.initializationVector.toString('hex'));
     //     console.log('encryptedSecret (' + message.encryptedSecret.length + " bytes): " + message.encryptedSecret.toString('base64') + " " + message.encryptedSecret.toString('hex'));
     //     console.log('tag (' + message.tag.length + " bytes): " + message.tag.toString('base64') + " " + message.tag.toString('hex'));
-    //     console.log('concatenated payload (' + encryptedPayload.length + ' bytes):');
+    //     console.log('concatenated payload ('+ encryptedPayload.length +' bytes):');
     //     console.log(encryptedPayload.toString('base64'));
     //     console.log(encryptedPayload.toString('hex'));
-    //     console.log();
+    //     console.log()
     // }
 }
 function asymmetricKeyTestAsync() {
@@ -216,7 +218,7 @@ function ietfTestCase() {
     }
 }
 symmetricKeyTest();
-// asymmetricKeyTestAsync().then(function () {
+// asymmetricKeyTestAsync().then(() => {
 //     ietfTestCase();
 // });
 // const cbcAlgorithm = 'aes-256-cbc';
