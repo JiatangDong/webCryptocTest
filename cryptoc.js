@@ -9,10 +9,12 @@ var algorithmCode = 1;
 var algorithmCodeByteLength = 1;
 var ivLength = aes256BlockSize;
 var tagLength = 24; // from half of sha384 (384/2/8)
-var FIXED_ARRAY = [98, 183, 249, 18, 137, 227, 35, 73, 241, 243, 134, 94, 109, 227, 127, 115, 128, 55, 115, 66, 163, 238, 63, 239, 250, 236, 168, 247, 21, 10, 201, 134];
+var FIXED_ARRAY = [99, 183, 249, 18, 137, 227, 35, 73, 241, 243, 134, 94, 109, 227, 127, 115, 128, 55, 115, 66, 163, 238, 63, 239, 250, 236, 168, 247, 21, 10, 201, 134];
 function hmacSha256(cek, type, algorithm) {
     var hmac = crypto_1.createHmac('sha256', cek);
     hmac.update(type);
+    hmac.update(algorithm);
+    hmac.update(cek.byteLength.toString());
     return hmac.digest();
 }
 function cipherKeyFromContentEncryptionKey(cek, algorithm) {

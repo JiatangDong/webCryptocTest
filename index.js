@@ -1,5 +1,7 @@
 "use strict";
 
+
+
 const cbcAlgorithm = 'aes-256-cbc';
 const aes256BlockSize = 16;
 const algorithm = 'AEAD_AES_256_CBC_HMAC_SHA384';
@@ -18,7 +20,7 @@ function generateSymmetric256Key(fixed = false) {
     if (fixed) {
         array = FIXED_ARRAY
     } else {
-        window.crypto.getRandomValues(array)
+        crypto.getRandomValues(array)
     }
     return array;
 }
@@ -26,7 +28,8 @@ function generateSymmetric256Key(fixed = false) {
 async function cipherKeyFromContentEncryptionKey(cek, algorithm) {
     var str = 'Microsoft Teams Vault Symmetric Encryption Key'
     const data = new TextEncoder().encode(str);
-    const hash = await window.crypto.subtle.digest('SHA-256', data);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    const hash2 = await msrCrypto.subtle.digest({name: "SHA-256"}, data);
     return hash;
 }
 
