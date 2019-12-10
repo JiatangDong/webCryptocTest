@@ -3,7 +3,6 @@
     "description": "",
     "version": "1.0.0",
     "dependencies": {
-        "@types/node": "^12.12.14",
-        "msrcrypto": "^1.4.1"
+        "@types/node": "^12.12.14"
     }
 }
