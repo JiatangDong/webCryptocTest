@@ -34,26 +34,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __read = (this && this.__read) || function (o, n) {
-    var m = typeof Symbol === "function" && o[Symbol.iterator];
-    if (!m) return o;
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
-    }
-    catch (error) { e = { error: error }; }
-    finally {
-        try {
-            if (r && !r.done && (m = i["return"])) m.call(i);
-        }
-        finally { if (e) throw e.error; }
-    }
-    return ar;
-};
-var __spread = (this && this.__spread) || function () {
-    for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
-    return ar;
-};
 var aes256BlockSize = 16;
 var algorithm = 'AEAD_AES_256_CBC_HMAC_SHA384';
 var algorithmCode = 1;
@@ -61,9 +41,10 @@ var algorithmCodeByteLength = 1;
 var ivLength = aes256BlockSize;
 var tagLength = 24; // from half of sha384 (384/2/8)
 var FIXED_ARRAY = [98, 183, 249, 18, 137, 227, 35, 73, 241, 243, 134, 94, 109, 227, 127, 115, 128, 55, 115, 66, 163, 238, 63, 239, 250, 236, 168, 247, 21, 10, 201, 134];
+var FIXED_ARRAY16 = [78, 27, 238, 163, 112, 200, 84, 93, 183, 58, 101, 218, 37, 131, 14, 212];
 function hmacSha256Async(cek, type, algorithm) {
     return __awaiter(this, void 0, void 0, function () {
-        var utf8Encoder, typeBytes, algorithmBytes, cekLengthBytes, buffer, key;
+        var utf8Encoder, typeBytes, algorithmBytes, cekLengthBytes, buffer, key, crytoPromise;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -78,7 +59,8 @@ function hmacSha256Async(cek, type, algorithm) {
                     return [4 /*yield*/, crypto.subtle.importKey('raw', cek, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])];
                 case 1:
                     key = _a.sent();
-                    return [4 /*yield*/, crypto.subtle.sign('HMAC', key, buffer)];
+                    crytoPromise = crypto.subtle.sign('HMAC', key, buffer);
+                    return [4 /*yield*/, crytoPromise];
                 case 2: return [2 /*return*/, _a.sent()];
             }
         });
@@ -151,7 +133,7 @@ function encryptAndTagAsync(rawCipherKey, rawMacKey, algorithmCode, initializati
         });
     });
 }
-/*export*/ function encryptSymmetric256Async(secret, secretKey) {
+function encryptSymmetric256Async(secret, secretKey) {
     return __awaiter(this, void 0, void 0, function () {
         var rawCipherKey, rawMacKey, initializationVector, result, buffer;
         return __generator(this, function (_a) {
@@ -162,8 +144,7 @@ function encryptAndTagAsync(rawCipherKey, rawMacKey, algorithmCode, initializati
                     return [4 /*yield*/, macKeyFromContentEncryptionKeyAsync(secretKey, algorithm)];
                 case 2:
                     rawMacKey = _a.sent();
-                    initializationVector = new Uint8Array(ivLength);
-                    crypto.getRandomValues(initializationVector);
+                    initializationVector = new Uint8Array(FIXED_ARRAY16);
                     return [4 /*yield*/, encryptAndTagAsync(rawCipherKey, rawMacKey, algorithmCode, initializationVector, secret)];
                 case 3:
                     result = _a.sent();
@@ -222,8 +203,9 @@ function equalArray(a, b) {
             switch (_a.label) {
                 case 0:
                     message = splitEncryptedMessage(encryptedMessage);
-                    if (encryptedMessage[0] !== algorithmCode)
+                    if (encryptedMessage[0] !== algorithmCode) {
                         throw "bad message type. this algorithm can only decode AEAD_AES_256_CBC_HMAC_SHA384";
+                    }
                     return [4 /*yield*/, macKeyFromContentEncryptionKeyAsync(secretKey, algorithm)];
                 case 1:
                     rawMacKey = _a.sent();
@@ -250,12 +232,12 @@ function Uint8ArrayFromHex(s) {
     }
     return new Uint8Array(0);
 }
-function Base64FromArrayBuffer(a) {
-    return Base64FromUint8Array(new Uint8Array(a));
-}
-function Base64FromUint8Array(a) {
-    return btoa(String.fromCharCode.apply(String, __spread(a)));
-}
+// function Base64FromArrayBuffer(a: ArrayBuffer): string {
+//     return Base64FromUint8Array(new Uint8Array(a));
+// }
+// function Base64FromUint8Array(a: Uint8Array): string {
+//     return btoa(String.fromCharCode(...a));
+// }
 function Uint8ArrayFromBase64(s) {
     var b = atob(s);
     var buffer = new Uint8Array(b.length);
@@ -264,7 +246,7 @@ function Uint8ArrayFromBase64(s) {
 }
 function symmetricKeyTestAsync() {
     return __awaiter(this, void 0, void 0, function () {
-        var key, cipherKey, macKey, secrets, utf8Decoder, utf8Encoder, i, rawPlaintext, plaintext, message, encryptedPayload, rawRoundtrip, roundtrip, message_1;
+        var key, cipherKey, macKey, secrets, utf8Decoder, utf8Encoder, i, buf, encryptedPayload, decryptedPayload;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -273,87 +255,39 @@ function symmetricKeyTestAsync() {
                     return [4 /*yield*/, cipherKeyFromContentEncryptionKeyAsync(key, algorithm)];
                 case 1:
                     cipherKey = _a.sent();
-                    console.log('Key (' + cipherKey.byteLength + ' bytes): ' + buf2hex(cipherKey));
-                    if (Base64FromArrayBuffer(cipherKey) !== 'hWf9EsSbSLvhzJ4kdxcNLF4Pq8XUYqajWLtGqhUL2SQ=') {
-                        console.log('Expected: hWf9EsSbSLvhzJ4kdxcNLF4Pq8XUYqajWLtGqhUL2SQ=');
-                        console.log('Actual:   ' + Base64FromArrayBuffer(cipherKey));
-                        throw 'cipherKey was not correctly generated';
-                    }
+                    console.log('ENC_KEY (' + cipherKey.byteLength + ' bytes): ' + buf2hex(cipherKey));
                     return [4 /*yield*/, macKeyFromContentEncryptionKeyAsync(key, algorithm)];
                 case 2:
                     macKey = _a.sent();
-                    if (Base64FromArrayBuffer(macKey) !== '6qmPn/wi9cDf3XQL66lNEPonYxAx7A95gavk9oODOWQ=') {
-                        console.log('Expected: 6qmPn/wi9cDf3XQL66lNEPonYxAx7A95gavk9oODOWQ=');
-                        console.log('Actual:   ' + Base64FromArrayBuffer(macKey));
-                        throw 'macKey was not correctly generated';
-                    }
+                    console.log('MAC_KEY (' + macKey.byteLength + ' bytes): ' + buf2hex(macKey));
                     secrets = [
-                        { plaintext: 'some seriously secret stuff', encrypted: 'AYlapAevhHinapEOd2cjh97AnJ83RPcXxUM26l5wzvsZXFEaYLe8d8UyedvLzGm1ohotReGXh7le840d3Y7nm7Qg5D2dqTR0Cg==' },
-                        { plaintext: '', encrypted: 'AVHxOUWDSThDb4iyEAQIbaVeCUsUQhQAq6GdWdfEcN1d6fAqrKsMooFNOC5NIC4CS13LXJeXHeOe' },
-                        { plaintext: '1', encrypted: 'ATBzEapyo/g2j/ivm6AjuBDHbhUfmDxUZxltKDvMlFLd3tw+h1EcTEvLAK5HlY0R2yIN2eaiBJE2' },
-                        { plaintext: '22', encrypted: 'AQCT/AyZibVfyhaObFOAUPOK2G8xxJxdrI0s42VVYDVU36rD7L5+m8q94EtvujyqkPJrhS6BkBKI' },
-                        { plaintext: '333', encrypted: 'AaQaxBLrxE7J7QuAvnFlrOI6W2OMgoAHehgrG6+gLk9xafcJFkZcbLMxr+yZqXqW2UxXnA25r2q+' },
-                        { plaintext: '4444', encrypted: 'AbwZFNkUewWFCaeLN8qhLPjRaOGKmETC9/YHBNfkFhSVsaa7eCKg4J5qbWjJ4s5jOdxz/JQ66G4W' },
-                        { plaintext: '55555', encrypted: 'ASG2Ggh8Kr5eAJnz69gu9Ww0bU/Y12+kjDun17+hl0ijPmBoL00CQhsHkVnaEbHkMc+O20OLl6gW' },
-                        { plaintext: '666666', encrypted: 'ASmtrK2fTwWn9Ye/K1z74kcuoUaxRJrykdHL6WtwyYHM2iXliP9aDvD445T3Oz3i6dXiDEQGICDk' },
-                        { plaintext: '7777777', encrypted: 'Af+L8OyKDdZMTbzzveOKkMACf7amfNnvalQobZqLTtivBzCIM00THUZlXA8gCIMj7fE6lEBdscrH' },
-                        { plaintext: '88888888', encrypted: 'AdyTnmzfmE/dt+2s5VDukTsD7fJz0uapwHczUzMCWFXb6iXGLoCuzW38WsxdnY4DuRcQ3nsG7Nj1' },
-                        { plaintext: '999999999', encrypted: 'AZiUEsBkuZPXetwSHNdTNX0Q+UsGFPD8SelHwM9/gh4EpmT2cD68umVlAz1/WHUEoEXS/gcYr3TR' },
-                        { plaintext: 'aaaaaaaaaa', encrypted: 'ARyRIRAlV8QCiShwuXLtekL03eDg0wWy+Y3mSiLoAZ4JnoH0OHo7N9wE3kNWM8Q3UcR3LXTR6pI5' },
-                        { plaintext: 'bbbbbbbbbbb', encrypted: 'AQNM90BU7pTXBG+gzGI8Ev1OBEz1rOe2kEP9Uslf09Ttpd8GlIASkQ47QV+y3BlmmIAQhW56TWIj' },
-                        { plaintext: 'cccccccccccc', encrypted: 'AfBs+z4d0pxqhWaSY0DkGhimucwa5kBWVdRTM+G1FU3VD4mobvkfa68cpK0WkCmGqiG2mj9mmPD7' },
-                        { plaintext: 'ddddddddddddd', encrypted: 'AfMCgcvDfaUpfllQXt1nMo6ugSUQfj5J6FirtlqeTrVsx3ZaYAnMtSrJZOVWfsoqzf8v513aZo4b' },
-                        { plaintext: 'eeeeeeeeeeeeee', encrypted: 'AZETlLelS/G1D9Q7H2ntGmQn+q2ejvZ+OVOhJQ/tNS/XEmpC5huCsf5MkLL7Ln/WP+e2I7W/k8Vs' },
-                        { plaintext: 'fffffffffffffff', encrypted: 'AdiJSL7O5/qetzlYLXMBDSuW1YaN2y7Ujb37O4SE+y6LWbpMdMwWD8719x6Hj/6nJiFdzf1t/XxP' },
-                        { plaintext: '0000000000000000', encrypted: 'AYMR7MOQEtFER3VUUk68wTxoWMg+N372smULrlSnMxeMyHc95tiN1N1Ch80O85bPhq03a/b3e0zhs+yxLNiBjBbSQN7onYn/BA==' },
-                        { plaintext: '97Ahhtgu6RPXFpklQ/lkYS92KmqFO4iPXDBWwTJJdWY=', encrypted: 'AcL76MT/JcYwnGFrIcuI+QYY4D6WEEjFDsLuk/YEsnBiULyIbP5SeD4JG8CdjGjBGD0nCJOVaVYYYd+4ZE2HsukofPJloBIMyuZyO207bxuHKb9n+Nuu5fo=' },
+                        'some seriously secret stuff',
+                        // '',
+                        '1',
                     ];
                     utf8Decoder = new TextDecoder();
                     utf8Encoder = new TextEncoder();
                     i = 0;
                     _a.label = 3;
                 case 3:
-                    if (!(i != secrets.length)) return [3 /*break*/, 8];
-                    return [4 /*yield*/, decryptSymmetric256Async(Uint8ArrayFromBase64(secrets[i].encrypted), key)];
+                    if (!(i != secrets.length)) return [3 /*break*/, 7];
+                    buf = utf8Encoder.encode(secrets[i]);
+                    return [4 /*yield*/, encryptSymmetric256Async(buf, key)];
                 case 4:
-                    rawPlaintext = _a.sent();
-                    plaintext = utf8Decoder.decode(rawPlaintext);
-                    if (plaintext !== secrets[i].plaintext) {
-                        message = splitEncryptedMessage(Uint8ArrayFromBase64(secrets[i].encrypted));
-                        console.log('algorithmCode (1 byte): ' + message.algorithmCode.toString());
-                        console.log('initializationVector (' + message.initializationVector.length + " bytes): " + message.initializationVector);
-                        console.log('encryptedSecret (' + message.encryptedSecret.length + " bytes): " + message.encryptedSecret);
-                        console.log('tag (' + message.tag.length + " bytes): " + message.tag);
-                        console.log('expected: ' + secrets[i].plaintext);
-                        console.log('actual: ' + plaintext);
-                        throw 'plaintext <' + secrets[i].plaintext + '> was not correctly decrypted';
-                    }
-                    return [4 /*yield*/, encryptSymmetric256Async(utf8Encoder.encode(plaintext), key)];
-                case 5:
                     encryptedPayload = _a.sent();
-                    return [4 /*yield*/, decryptSymmetric256Async(Uint8ArrayFromBase64(secrets[i].encrypted), key)];
+                    console.log(buf2hex(encryptedPayload));
+                    return [4 /*yield*/, decryptSymmetric256Async(encryptedPayload, key)];
+                case 5:
+                    decryptedPayload = _a.sent();
+                    console.log(decryptedPayload);
+                    _a.label = 6;
                 case 6:
-                    rawRoundtrip = _a.sent();
-                    roundtrip = utf8Decoder.decode(rawRoundtrip);
-                    if (plaintext !== roundtrip) {
-                        message_1 = splitEncryptedMessage(new Uint8Array(encryptedPayload));
-                        console.log('algorithmCode (1 byte): ' + message_1.algorithmCode.toString());
-                        console.log('initializationVector (' + message_1.initializationVector.length + " bytes): " + message_1.initializationVector);
-                        console.log('encryptedSecret (' + message_1.encryptedSecret.length + " bytes): " + message_1.encryptedSecret);
-                        console.log('tag (' + message_1.tag.length + " bytes): " + message_1.tag);
-                        console.log('expected: ' + plaintext);
-                        console.log('actual: ' + roundtrip);
-                        throw 'plaintext <' + plaintext + '> was not correctly encrypted';
-                    }
-                    _a.label = 7;
-                case 7:
                     ++i;
                     return [3 /*break*/, 3];
-                case 8:
-                    console.log('finished symmetric tests');
-                    return [2 /*return*/];
+                case 7: return [2 /*return*/];
             }
         });
     });
 }
 symmetricKeyTestAsync();
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoid2ViY3J5cHRvcG9jLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsid2ViY3J5cHRvcG9jLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztBQUFBLElBQU0sZUFBZSxHQUFHLEVBQUUsQ0FBQztBQUMzQixJQUFNLFNBQVMsR0FBRyw4QkFBOEIsQ0FBQztBQUNqRCxJQUFNLGFBQWEsR0FBRyxDQUFDLENBQUM7QUFDeEIsSUFBTSx1QkFBdUIsR0FBRyxDQUFDLENBQUM7QUFDbEMsSUFBTSxRQUFRLEdBQUcsZUFBZSxDQUFDO0FBQ2pDLElBQU0sU0FBUyxHQUFHLEVBQUUsQ0FBQyxDQUFDLGdDQUFnQztBQUV0RCxJQUFNLFdBQVcsR0FBRyxDQUFDLEVBQUUsRUFBQyxHQUFHLEVBQUMsR0FBRyxFQUFDLEVBQUUsRUFBQyxHQUFHLEVBQUMsR0FBRyxFQUFDLEVBQUUsRUFBQyxFQUFFLEVBQUMsR0FBRyxFQUFDLEdBQUcsRUFBQyxHQUFHLEVBQUMsRUFBRSxFQUFDLEdBQUcsRUFBQyxHQUFHLEVBQUMsR0FBRyxFQUFDLEdBQUcsRUFBQyxHQUFHLEVBQUMsRUFBRSxFQUFDLEdBQUcsRUFBQyxFQUFFLEVBQUMsR0FBRyxFQUFDLEdBQUcsRUFBQyxFQUFFLEVBQUMsR0FBRyxFQUFDLEdBQUcsRUFBQyxHQUFHLEVBQUMsR0FBRyxFQUFDLEdBQUcsRUFBQyxFQUFFLEVBQUMsRUFBRSxFQUFDLEdBQUcsRUFBQyxHQUFHLENBQUMsQ0FBQztBQUM1SSxJQUFNLGFBQWEsR0FBRyxDQUFDLEVBQUUsRUFBRSxFQUFFLEVBQUUsR0FBRyxFQUFFLEdBQUcsRUFBRSxHQUFHLEVBQUUsR0FBRyxFQUFFLEVBQUUsRUFBRSxFQUFFLEVBQUUsR0FBRyxFQUFFLEVBQUUsRUFBRSxHQUFHLEVBQUUsR0FBRyxFQUFFLEVBQUUsRUFBRSxHQUFHLEVBQUUsRUFBRSxFQUFFLEdBQUcsQ0FBQyxDQUFBO0FBRS9GLFNBQWUsZUFB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

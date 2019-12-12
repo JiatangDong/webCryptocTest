@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "emitDecoratorMetadata": true,
+        "module": "commonjs",
+        "target": "ES6",
+        "outDir": "./",
+        "inlineSourceMap": true,
+        "downlevelIteration": true
+    }
+}
