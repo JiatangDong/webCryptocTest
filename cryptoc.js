@@ -40,15 +40,7 @@ function messageAuthenticationCodeFromEncryptedSecret(macKey, associatedData, in
     hmac.update(initializationVector);
     hmac.update(encryptedSecret);
     hmac.update(associatedDataLengthBits);
-    console.log('-------------');
-    console.log(associatedData);
-    console.log(initializationVector);
-    console.log(encryptedSecret);
-    console.log(associatedDataLengthBits);
-    console.log('-------------');
-    var d = hmac.digest().slice(0, tagLength);
-    // console.log("h:", d)
-    return d;
+    return hmac.digest().slice(0, tagLength);
 }
 function encryptAndTag(cipherKey, macKey, associatedData, initializationVector, secret) {
     var cipher = crypto_1.createCipheriv(cbcAlgorithm, cipherKey, initializationVector);
@@ -152,6 +144,23 @@ function symmetricKeyTest() {
     console.log('MAC_KEY (' + macKey.length + ' bytes): ' + macKey.toString('base64') + " " + macKey.toString('hex'));
     var secrets = [
         'some seriously secret stuff',
+        '',
+        '1',
+        '22',
+        '333',
+        '4444',
+        '55555',
+        '666666',
+        '7777777',
+        '88888888',
+        '999999999',
+        'aaaaaaaaaa',
+        'bbbbbbbbbbb',
+        'cccccccccccc',
+        'ddddddddddddd',
+        'eeeeeeeeeeeeee',
+        'fffffffffffffff',
+        '0000000000000000',
     ];
     for (var i = 0; i != secrets.length; ++i) {
         var encryptedPayload = encryptSymmetric256(Buffer.from(secrets[i]), key);

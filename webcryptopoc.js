@@ -40,8 +40,8 @@ var algorithmCode = 1;
 var algorithmCodeByteLength = 1;
 var ivLength = aes256BlockSize;
 var tagLength = 24; // from half of sha384 (384/2/8)
-var FIXED_ARRAY = [215, 4, 169, 9, 70, 78, 202, 51, 31, 6, 146, 226, 225, 115, 17, 158, 44, 65, 68, 137, 154, 4, 124, 226, 182, 177, 158, 61, 48, 150, 25, 205];
-var FIXED_ARRAY16 = [78, 27, 238, 163, 112, 200, 84, 93, 183, 58, 101, 218, 37, 131, 14, 212];
+// const FIXED_ARRAY = [215, 4, 169, 9, 70, 78, 202, 51, 31, 6, 146, 226, 225, 115, 17, 158, 44, 65, 68, 137, 154, 4, 124, 226, 182, 177, 158, 61, 48, 150, 25, 205];
+// const FIXED_ARRAY16 = [78, 27, 238, 163, 112, 200, 84, 93, 183, 58, 101, 218, 37, 131, 14, 212]
 function hmacSha256Async(cek, type, algorithm) {
     return __awaiter(this, void 0, void 0, function () {
         var utf8Encoder, typeBytes, algorithmBytes, cekLengthBytes, buffer, key, crytoPromise;
@@ -74,6 +74,17 @@ function macKeyFromContentEncryptionKeyAsync(cek, algorithm) {
 }
 function buf2hex(buf) {
     return Array.prototype.map.call(new Uint8Array(buf), function (x) { return (('00' + x.toString(16)).slice(-2)); }).join('');
+}
+function generateRandomVector(fixedVector) {
+    if (fixedVector === void 0) { fixedVector = null; }
+    var buffer = new Uint8Array(ivLength);
+    if (fixedVector != null) {
+        buffer = new Uint8Array(fixedVector);
+    }
+    else {
+        crypto.getRandomValues(buffer);
+    }
+    return buffer;
 }
 function generateSymmetric256Key(fixedKey) {
     if (fixedKey === void 0) { fixedKey = null; }
@@ -133,7 +144,8 @@ function encryptAndTagAsync(rawCipherKey, rawMacKey, algorithmCode, initializati
         });
     });
 }
-function encryptSymmetric256Async(secret, secretKey) {
+function encryptSymmetric256Async(secret, secretKey, iniVector) {
+    if (iniVector === void 0) { iniVector = null; }
     return __awaiter(this, void 0, void 0, function () {
         var rawCipherKey, rawMacKey, initializationVector, result, buffer;
         return __generator(this, function (_a) {
@@ -144,8 +156,7 @@ function encryptSymmetric256Async(secret, secretKey) {
                     return [4 /*yield*/, macKeyFromContentEncryptionKeyAsync(secretKey, algorithm)];
                 case 2:
                     rawMacKey = _a.sent();
-                    initializationVector = new Uint8Array(ivLength);
-                    crypto.getRandomValues(initializationVector);
+                    initializationVector = generateRandomVector(iniVector);
                     return [4 /*yield*/, encryptAndTagAsync(rawCipherKey, rawMacKey, algorithmCode, initializationVector, secret)];
                 case 3:
                     result = _a.sent();

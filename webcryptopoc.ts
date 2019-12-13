@@ -5,8 +5,8 @@ const algorithmCodeByteLength = 1;
 const ivLength = aes256BlockSize;
 const tagLength = 24; // from half of sha384 (384/2/8)
 
-const FIXED_ARRAY = [215, 4, 169, 9, 70, 78, 202, 51, 31, 6, 146, 226, 225, 115, 17, 158, 44, 65, 68, 137, 154, 4, 124, 226, 182, 177, 158, 61, 48, 150, 25, 205];
-const FIXED_ARRAY16 = [78, 27, 238, 163, 112, 200, 84, 93, 183, 58, 101, 218, 37, 131, 14, 212]
+// const FIXED_ARRAY = [215, 4, 169, 9, 70, 78, 202, 51, 31, 6, 146, 226, 225, 115, 17, 158, 44, 65, 68, 137, 154, 4, 124, 226, 182, 177, 158, 61, 48, 150, 25, 205];
+// const FIXED_ARRAY16 = [78, 27, 238, 163, 112, 200, 84, 93, 183, 58, 101, 218, 37, 131, 14, 212]
 
 async function hmacSha256Async(cek: Uint8Array, type: string, algorithm: string): Promise<ArrayBuffer> {
     const utf8Encoder = new TextEncoder();
@@ -33,6 +33,16 @@ function macKeyFromContentEncryptionKeyAsync(cek: Uint8Array, algorithm: string)
 
 function buf2hex(buf: any): string {
     return Array.prototype.map.call(new Uint8Array(buf), x=>(('00'+x.toString(16)).slice(-2))).join('');
+}
+
+function generateRandomVector(fixedVector = null): Uint8Array {
+    var buffer = new Uint8Array(ivLength);
+    if (fixedVector != null) {
+        buffer = new Uint8Array(fixedVector);
+    } else {
+        crypto.getRandomValues(buffer);
+    }
+    return buffer;
 }
 
 function generateSymmetric256Key(fixedKey = null): Uint8Array {
@@ -81,12 +91,10 @@ async function encryptAndTagAsync(rawCipherKey: ArrayBuffer, rawMacKey: ArrayBuf
     };
 }
 
-async function encryptSymmetric256Async(secret: Uint8Array, secretKey: Uint8Array) : Promise<Uint8Array> {
+async function encryptSymmetric256Async(secret: Uint8Array, secretKey: Uint8Array, iniVector: Uint8Array = null) : Promise<Uint8Array> {
     const rawCipherKey = await cipherKeyFromContentEncryptionKeyAsync(secretKey, algorithm);
     const rawMacKey = await macKeyFromContentEncryptionKeyAsync(secretKey, algorithm);
-    const initializationVector = new Uint8Array(ivLength);
-    crypto.getRandomValues(initializationVector);
-    // const initializationVector = new Uint8Array(FIXED_ARRAY16);
+    var initializationVector = generateRandomVector(iniVector);
     const result = await encryptAndTagAsync(rawCipherKey, rawMacKey, algorithmCode, initializationVector, secret);
     const buffer = new Uint8Array(result.data.byteLength + result.tag.byteLength);
     buffer.set(result.data);

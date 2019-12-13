@@ -56,17 +56,8 @@ function messageAuthenticationCodeFromEncryptedSecret(macKey: Buffer, associated
     hmac.update(initializationVector);
     hmac.update(encryptedSecret);
     hmac.update(associatedDataLengthBits);
-
-    console.log('-------------')
-    console.log(associatedData)
-    console.log(initializationVector)
-    console.log(encryptedSecret)
-    console.log(associatedDataLengthBits)
-    console.log('-------------')
-
-    const d = hmac.digest().slice(0, tagLength)
-    // console.log("h:", d)
-    return d;
+    
+    return hmac.digest().slice(0, tagLength);
 }
 
 function encryptAndTag(cipherKey: Buffer, macKey: Buffer, associatedData: Buffer, initializationVector: Buffer, secret: Buffer): {tag, encryptedSecret} {
@@ -188,23 +179,23 @@ function symmetricKeyTest() {
 
     const secrets = [
         'some seriously secret stuff',
-        // '',
-        // '1',
-        // '22',
-        // '333',
-        // '4444',
-        // '55555',
-        // '666666',
-        // '7777777',
-        // '88888888',
-        // '999999999',
-        // 'aaaaaaaaaa',
-        // 'bbbbbbbbbbb',
-        // 'cccccccccccc',
-        // 'ddddddddddddd',
-        // 'eeeeeeeeeeeeee',
-        // 'fffffffffffffff',
-        // '0000000000000000',
+        '',
+        '1',
+        '22',
+        '333',
+        '4444',
+        '55555',
+        '666666',
+        '7777777',
+        '88888888',
+        '999999999',
+        'aaaaaaaaaa',
+        'bbbbbbbbbbb',
+        'cccccccccccc',
+        'ddddddddddddd',
+        'eeeeeeeeeeeeee',
+        'fffffffffffffff',
+        '0000000000000000',
         // generateSymmetric256Key().toString('base64')
     ];
 
