@@ -35,7 +35,7 @@ function buf2hex(buf: any): string {
     return Array.prototype.map.call(new Uint8Array(buf), x=>(('00'+x.toString(16)).slice(-2))).join('');
 }
 
-/*export*/ function generateSymmetric256Key(fixedKey = null): Uint8Array {
+function generateSymmetric256Key(fixedKey = null): Uint8Array {
     var buffer = new Uint8Array(256/8);
     if (fixedKey != null) {
         buffer = new Uint8Array(fixedKey);
@@ -84,9 +84,9 @@ async function encryptAndTagAsync(rawCipherKey: ArrayBuffer, rawMacKey: ArrayBuf
 async function encryptSymmetric256Async(secret: Uint8Array, secretKey: Uint8Array) : Promise<Uint8Array> {
     const rawCipherKey = await cipherKeyFromContentEncryptionKeyAsync(secretKey, algorithm);
     const rawMacKey = await macKeyFromContentEncryptionKeyAsync(secretKey, algorithm);
-    // const initializationVector = new Uint8Array(ivLength);
-    // crypto.getRandomValues(initializationVector);
-    const initializationVector = new Uint8Array(FIXED_ARRAY16);
+    const initializationVector = new Uint8Array(ivLength);
+    crypto.getRandomValues(initializationVector);
+    // const initializationVector = new Uint8Array(FIXED_ARRAY16);
     const result = await encryptAndTagAsync(rawCipherKey, rawMacKey, algorithmCode, initializationVector, secret);
     const buffer = new Uint8Array(result.data.byteLength + result.tag.byteLength);
     buffer.set(result.data);
@@ -174,7 +174,7 @@ function Uint8ArrayFromBase64(s: string): Uint8Array {
 
 async function symmetricKeyTestAsync() : Promise<void> {
 
-    const key = generateSymmetric256Key(FIXED_ARRAY);
+    const key = generateSymmetric256Key();
     console.log('Key (' + key.length + ' bytes): ' + buf2hex(key));
 
     const cipherKey = await cipherKeyFromContentEncryptionKeyAsync(key, algorithm);
@@ -232,4 +232,3 @@ async function symmetricKeyTestAsync() : Promise<void> {
     }
 }
 
-symmetricKeyTestAsync();

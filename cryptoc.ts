@@ -114,8 +114,6 @@ function isMessageAuthentic(
         ): boolean {
     const associatedData = Buffer.from([message.algorithmCode]);
     const tag = messageAuthenticationCodeFromEncryptedSecret(macKey, associatedData, message.initializationVector, message.encryptedSecret);
-    // console.log("isMessageAuthentic tag", tag)
-    // console.log("isMessageAuthentic message.tag", message.tag)
     return (Buffer.compare(message.tag, tag) === 0);
 }
 

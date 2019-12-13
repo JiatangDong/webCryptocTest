@@ -87,8 +87,6 @@ function splitEncryptedMessage(encryptedMessage) {
 function isMessageAuthentic(macKey, message) {
     var associatedData = Buffer.from([message.algorithmCode]);
     var tag = messageAuthenticationCodeFromEncryptedSecret(macKey, associatedData, message.initializationVector, message.encryptedSecret);
-    // console.log("isMessageAuthentic tag", tag)
-    // console.log("isMessageAuthentic message.tag", message.tag)
     return (Buffer.compare(message.tag, tag) === 0);
 }
 function decryptMessage(message, secretKey) {

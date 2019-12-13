@@ -75,7 +75,7 @@ function macKeyFromContentEncryptionKeyAsync(cek, algorithm) {
 function buf2hex(buf) {
     return Array.prototype.map.call(new Uint8Array(buf), function (x) { return (('00' + x.toString(16)).slice(-2)); }).join('');
 }
-/*export*/ function generateSymmetric256Key(fixedKey) {
+function generateSymmetric256Key(fixedKey) {
     if (fixedKey === void 0) { fixedKey = null; }
     var buffer = new Uint8Array(256 / 8);
     if (fixedKey != null) {
@@ -144,7 +144,8 @@ function encryptSymmetric256Async(secret, secretKey) {
                     return [4 /*yield*/, macKeyFromContentEncryptionKeyAsync(secretKey, algorithm)];
                 case 2:
                     rawMacKey = _a.sent();
-                    initializationVector = new Uint8Array(FIXED_ARRAY16);
+                    initializationVector = new Uint8Array(ivLength);
+                    crypto.getRandomValues(initializationVector);
                     return [4 /*yield*/, encryptAndTagAsync(rawCipherKey, rawMacKey, algorithmCode, initializationVector, secret)];
                 case 3:
                     result = _a.sent();
@@ -250,7 +251,7 @@ function symmetricKeyTestAsync() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    key = generateSymmetric256Key(FIXED_ARRAY);
+                    key = generateSymmetric256Key();
                     console.log('Key (' + key.length + ' bytes): ' + buf2hex(key));
                     return [4 /*yield*/, cipherKeyFromContentEncryptionKeyAsync(key, algorithm)];
                 case 1:
@@ -308,4 +309,3 @@ function symmetricKeyTestAsync() {
         });
     });
 }
-symmetricKeyTestAsync();
