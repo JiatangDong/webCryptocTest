@@ -20,7 +20,7 @@ const algorithmCode = 1;
 const algorithmCodeByteLength = 1;
 const ivLength = aes256BlockSize;
 const tagLength = 24; // from half of sha384 (384/2/8)
-const FIXED_ARRAY = [98,183,249,18,137,227,35,73,241,243,134,94,109,227,127,115,128,55,115,66,163,238,63,239,250,236,168,247,21,10,201,134];
+const FIXED_ARRAY = [215, 4, 169, 9, 70, 78, 202, 51, 31, 6, 146, 226, 225, 115, 17, 158, 44, 65, 68, 137, 154, 4, 124, 226, 182, 177, 158, 61, 48, 150, 25, 205];
 const FIXED_ARRAY16 = [78, 27, 238, 163, 112, 200, 84, 93, 183, 58, 101, 218, 37, 131, 14, 212]
 
 function hmacSha256(cek: Buffer, type: string, algorithm: string): Buffer {
@@ -56,7 +56,17 @@ function messageAuthenticationCodeFromEncryptedSecret(macKey: Buffer, associated
     hmac.update(initializationVector);
     hmac.update(encryptedSecret);
     hmac.update(associatedDataLengthBits);
-    return hmac.digest().slice(0, tagLength);
+
+    console.log('-------------')
+    console.log(associatedData)
+    console.log(initializationVector)
+    console.log(encryptedSecret)
+    console.log(associatedDataLengthBits)
+    console.log('-------------')
+
+    const d = hmac.digest().slice(0, tagLength)
+    // console.log("h:", d)
+    return d;
 }
 
 function encryptAndTag(cipherKey: Buffer, macKey: Buffer, associatedData: Buffer, initializationVector: Buffer, secret: Buffer): {tag, encryptedSecret} {
@@ -104,8 +114,8 @@ function isMessageAuthentic(
         ): boolean {
     const associatedData = Buffer.from([message.algorithmCode]);
     const tag = messageAuthenticationCodeFromEncryptedSecret(macKey, associatedData, message.initializationVector, message.encryptedSecret);
-    console.log("isMessageAuthentic tag", tag)
-    console.log("isMessageAuthentic message.tag", message.tag)
+    // console.log("isMessageAuthentic tag", tag)
+    // console.log("isMessageAuthentic message.tag", message.tag)
     return (Buffer.compare(message.tag, tag) === 0);
 }
 
@@ -202,15 +212,17 @@ function symmetricKeyTest() {
 
     for(var i = 0; i != secrets.length; ++i) {
         const encryptedPayload = encryptSymmetric256(Buffer.from(secrets[i]), key);
-        console.log(decryptSymmetric256(encryptedPayload, key).toString());
+        const decryptedPayload = decryptSymmetric256(encryptedPayload, key);
+
         const message = splitEncryptedMessage(encryptedPayload);
         console.log('algorithmCode (1 byte): ' + message.algorithmCode.toString());
         console.log('initializationVector (' + message.initializationVector.length + " bytes): " + message.initializationVector.toString('base64') + " " + message.initializationVector.toString('hex'));
         console.log('encryptedSecret (' + message.encryptedSecret.length + " bytes): " + message.encryptedSecret.toString('base64') + " " + message.encryptedSecret.toString('hex'));
         console.log('tag (' + message.tag.length + " bytes): " + message.tag.toString('base64') + " " + message.tag.toString('hex'));
         console.log('concatenated payload ('+ encryptedPayload.length +' bytes):');
-        console.log(encryptedPayload.toString('base64'));
+        // console.log(encryptedPayload.toString('base64'));
         console.log(encryptedPayload.toString('hex'));
+        console.log(decryptedPayload.toString());
         console.log()
     }
 }
