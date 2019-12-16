@@ -36,16 +36,18 @@ $( document ).ready(function() {
     $('#roundTrip').click(runRoundTrip)
 
     $('#genKeyPair').click(generateRSAKeyPair)
-    $('#pubEncrypt').click(pubEncrypt)
+    $('#pubEncrypt').click(runPubEncrypt)
+    $('#ppkDecrypt').click(runPpkDecrypt)
+    $('#asymRoundTrip').click(asymRoundTrip)
 
     async function generateKey(e) {
         const key = generateSymmetric256Key();
-        $('#key').val(buf2hex(key))
+        $('#key').val(buf2base64(key))
     }
 
     async function generateVector(e) {
         const vector = generateRandomVector();
-        $('#vector').val(buf2hex(vector))
+        $('#vector').val(buf2base64(vector))
     }
 
     async function getKeyMaterial(passphrase) {
@@ -76,16 +78,14 @@ $( document ).ready(function() {
             true,
             ["encrypt", "decrypt"]
         )
-        console.log(keyPair)
 
         const pub = await crypto.subtle.exportKey('spki', keyPair.publicKey);
+
+        const ppk = await crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
+        // const keyMaterial = await getKeyMaterial(passphrase)
+        // const wrappingKey = await getWrappingKey(keyMaterial);
+        // const ppk = await crypto.subtle.wrapKey("pkcs8", keyPair.privateKey, wrappingKey, aesAlgo);
         
-        const keyMaterial = await getKeyMaterial(passphrase)
-        const wrappingKey = await getWrappingKey(keyMaterial);
-
-        const ppk = await crypto.subtle.wrapKey("pkcs8", keyPair.privateKey, wrappingKey, aesAlgo);
-
-
         $('#pub').val(buf2base64(pub));
         $('#ppk').val(buf2base64(ppk));
     }
@@ -100,39 +100,39 @@ $( document ).ready(function() {
         const keyText = $('#key').val();
         if (keyText == "") {
             key = generateSymmetric256Key();
-            $('#key').val(buf2hex(key))
+            $('#key').val(buf2base64(key))
         } else {
-            key = Uint8ArrayFromHex(keyText)
+            key = base64ToBuffer(keyText)
         }
 
         var vector
         const vectorText = $('#vector').val();
         if (vectorText == "") {
             vector = generateRandomVector();
-            $('#vector').val(buf2hex(vector))
+            $('#vector').val(buf2base64(vector))
         } else {
-            vector = Uint8ArrayFromHex(vectorText)
+            vector = base64ToBuffer(vectorText)
         }
 
         const encryptedPayload = await encryptSymmetric256Async(buf, key, vector);
         const message = splitEncryptedMessage(encryptedPayload);
 
         var runResult = `
-key: ${buf2hex(key)}
+key: ${buf2base64(key)}
 
-initialize vector: ${buf2hex(vector)}
+initialize vector: ${buf2base64(vector)}
 
 algorithmCode (1 byte): ${message.algorithmCode.toString()}
 
-initializationVector (${message.initializationVector.length} bytes):  ${buf2hex(message.initializationVector)}
+initializationVector (${message.initializationVector.length} bytes):  ${buf2base64(message.initializationVector)}
 
 encryptedSecret (${message.encryptedSecret.length} bytes): 
-${buf2hex(message.encryptedSecret)}
+${buf2base64(message.encryptedSecret)}
 
-tag (${message.tag.length} bytes): ${buf2hex(message.tag)}
+tag (${message.tag.length} bytes): ${buf2base64(message.tag)}
 
 concatenated payload (${encryptedPayload.length} bytes):
-${buf2hex(encryptedPayload)}
+${buf2base64(encryptedPayload)}
 `
         return {secret, key, encryptedPayload, runResult}
     };
@@ -145,9 +145,14 @@ ${buf2hex(encryptedPayload)}
 
     async function runDecrypt(e) {
         $('#output').html('')
-        const payload = Uint8ArrayFromHex($('#payload').val());
-        const key = Uint8ArrayFromHex($('#key').val())
+        const payload = base64ToBuffer($('#payload').val());
+        const key = base64ToBuffer($('#key').val())
         const decryptedPayload = await decryptSymmetric256Async(payload, key);
+        // const iv = base64ToBuffer($('#vector').val())
+        // const decryptedPayload = await decryptMessageAsync({
+        //     initializationVector: iv,
+        //     encryptedSecret: payload
+        // }, key)
         const decryptedSecret = utf8Decoder.decode(decryptedPayload)
 
         var runResult = `
@@ -168,11 +173,11 @@ round trip success: ${result.secret === decryptedSecret}
         $('#output').html(runResult)
     }
 
-    async function pubEncrypt(e) {
+    async function pubEncrypt() {
         const pubText = $('#pub').val();
         const ppkText = $('#ppk').val();
         const secret = $('#payload').val();
-        const passphrase = $('#passphrase').val();
+        // const passphrase = $('#passphrase').val();
 
         const pub = await crypto.subtle.importKey(
             'spki', 
@@ -185,25 +190,25 @@ round trip success: ${result.secret === decryptedSecret}
         // import none encrypted ppk
         // const ppk = await crypto.subtle.importKey(
         //     'pkcs8', 
-        //     str2ab(atob(ppkText)), 
+        //     base64ToBuffer(ppkText), 
         //     rsaAlgo, 
         //     true, 
         //     ["decrypt"]
         // )
 
         // import encrypted ppk-----------------------------------------
-        const keyMaterial = await getKeyMaterial(passphrase);
-        const wrappingKey = await getWrappingKey(keyMaterial);
+        // const keyMaterial = await getKeyMaterial(passphrase);
+        // const wrappingKey = await getWrappingKey(keyMaterial);
 
-        const ppk = await crypto.subtle.unwrapKey(
-            'pkcs8',
-            base64ToBuffer(ppkText),
-            wrappingKey,
-            aesAlgo,
-            rsaAlgo, 
-            true,
-            ["decrypt"]
-        )
+        // const ppk = await crypto.subtle.unwrapKey(
+        //     'pkcs8',
+        //     base64ToBuffer(ppkText),
+        //     wrappingKey,
+        //     aesAlgo,
+        //     rsaAlgo, 
+        //     true,
+        //     ["decrypt"]
+        // )
         // end import encrypted ppk-----------------------------------------
 
         
@@ -213,17 +218,73 @@ round trip success: ${result.secret === decryptedSecret}
             utf8Encoder.encode(secret)
         )
 
-        console.log(buf2hex(encryptedPayload))
 
+        // console.log(buf2base64(encryptedPayload))
+
+        // const decryptedPayload = await crypto.subtle.decrypt(
+        //     {name: 'RSA-OAEP'},
+        //     ppk,
+        //     encryptedPayload
+        // )
+
+        // console.log(utf8Decoder.decode(decryptedPayload))
+        const encryptedSecret = buf2base64(encryptedPayload)
+
+        var runResult = `
+encryptedSecret (${encryptedPayload.byteLength} bytes): 
+${encryptedSecret}
+        `
+        
+        return {runResult, encryptedSecret, secret}
+    }
+
+    async function ppkDecrypt(secret) {
+        const ppkText = $('#ppk').val();
+
+        const ppk = await crypto.subtle.importKey(
+            'pkcs8', 
+            base64ToBuffer(ppkText), 
+            rsaAlgo, 
+            true, 
+            ["decrypt"]
+        )
+        
+        const encryptedPayload = base64ToBuffer(secret);
         const decryptedPayload = await crypto.subtle.decrypt(
             {name: 'RSA-OAEP'},
             ppk,
             encryptedPayload
         )
 
-        console.log(utf8Decoder.decode(decryptedPayload))
+        decryptedSecret = utf8Decoder.decode(decryptedPayload)
 
+        var runResult = `
+Dencrypted Secret: (${decryptedPayload.byteLength} bytes):
+${decryptedSecret}
+        `
+        return {runResult, decryptedSecret}
     }
+
+    async function asymRoundTrip() {
+        const result = await pubEncrypt();
+        const decryptedResult = await ppkDecrypt(result.encryptedSecret);
+        var runResult = result.runResult + `
+round trip success: ${result.secret === decryptedResult.decryptedSecret}
+`
+        $('#output').html(runResult)
+    }
+
+    async function runPubEncrypt(e) {
+        const result = await pubEncrypt();
+        $('#output').html(result.runResult)
+    }
+
+    async function runPpkDecrypt(e) {
+        const secret = $('#payload').val();
+        const result = await ppkDecrypt(secret);
+        $('#output').html(result.runResult)
+    }
+
 
 });
 
