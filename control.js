@@ -6,11 +6,25 @@ const ivBytes = [250, 110, 136, 113, 110, 202, 54, 196, 17, 144, 228, 246, 211, 
 // const ivBytes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 const iv = bytesToArrayBuffer(ivBytes);
 
+const pbkAlgo = {
+    name: "PBKDF2",
+    salt: salt, 
+    iterations: 100000,
+    hash: "SHA-256"
+}
+
 const aesAlgo = { 
     name: "AES-CBC", 
     iv: iv, 
     length: 256
 };
+
+const rsaAlgo = {
+    name: "RSA-OAEP",
+    modulusLength: 2048,
+    publicExponent: new Uint8Array([1, 0, 1]),
+    hash: "SHA-256"
+}
 
 $( document ).ready(function() {
 
@@ -21,6 +35,7 @@ $( document ).ready(function() {
     $('#decrypt').click(runDecrypt)
     $('#roundTrip').click(runRoundTrip)
 
+    $('#genKeyPair').click(generateRSAKeyPair)
     $('#pubEncrypt').click(pubEncrypt)
 
     async function generateKey(e) {
@@ -33,9 +48,49 @@ $( document ).ready(function() {
         $('#vector').val(buf2hex(vector))
     }
 
-    async function generateRSAKeyPair(e) {
-    
+    async function getKeyMaterial(passphrase) {
+        return crypto.subtle.importKey(
+            "raw",
+            utf8Encoder.encode(passphrase),
+            {name: "PBKDF2"},
+            false,
+            ["deriveKey", "deriveKey"]
+        )
     }
+
+    async function getWrappingKey(keyMaterial) {
+        return window.crypto.subtle.deriveKey(
+            pbkAlgo,
+            keyMaterial,
+            aesAlgo,
+            true,
+            [ "wrapKey", "unwrapKey" ]
+          );
+    }
+
+    async function generateRSAKeyPair(e) {
+        // const passphrase = prompt("Enter your passphrase.")
+        const passphrase = "12345";
+        const keyPair = await crypto.subtle.generateKey(
+            rsaAlgo,
+            true,
+            ["encrypt", "decrypt"]
+        )
+        console.log(keyPair)
+
+        const pub = await crypto.subtle.exportKey('spki', keyPair.publicKey);
+        
+        const keyMaterial = await getKeyMaterial(passphrase)
+        const wrappingKey = await getWrappingKey(keyMaterial);
+
+        const ppk = await crypto.subtle.wrapKey("pkcs8", keyPair.privateKey, wrappingKey, aesAlgo);
+
+
+        $('#pub').val(buf2base64(pub));
+        $('#ppk').val(buf2base64(ppk));
+    }
+
+
 
     async function encrypt() {
         const secret = $('#payload').val()
@@ -122,12 +177,7 @@ round trip success: ${result.secret === decryptedSecret}
         const pub = await crypto.subtle.importKey(
             'spki', 
             base64ToBuffer(pubText), 
-            {
-                name: "RSA-OAEP", 
-                hash: "SHA-256",
-                modulusLength: 2048,
-                publicExponent: 0x10001
-            }, 
+            rsaAlgo, 
             true, 
             ["encrypt"]
         )
@@ -136,48 +186,21 @@ round trip success: ${result.secret === decryptedSecret}
         // const ppk = await crypto.subtle.importKey(
         //     'pkcs8', 
         //     str2ab(atob(ppkText)), 
-        //     {
-        //         name: "RSA-OAEP", 
-        //         hash: "SHA-256",
-        //         modulusLength: 2048,
-        //         publicExponent: new Uint8Array([1, 0, 1])
-        //     }, 
+        //     rsaAlgo, 
         //     true, 
         //     ["decrypt"]
         // )
 
         // import encrypted ppk-----------------------------------------
-        const keyMaterial = await crypto.subtle.importKey(
-            "raw",
-            utf8Encoder.encode(passphrase),
-            {name: "PBKDF2"},
-            false,
-            ["deriveKey"]
-        );
-        const unwrappingKey = await crypto.subtle.deriveKey(
-            {
-                name: "PBKDF2",
-                salt: salt, 
-                iterations: 1000,
-                hash: "SHA-256"
-            },
-            keyMaterial,
-            aesAlgo,
-            true,
-            ["unwrapKey"]
-        );
+        const keyMaterial = await getKeyMaterial(passphrase);
+        const wrappingKey = await getWrappingKey(keyMaterial);
 
         const ppk = await crypto.subtle.unwrapKey(
             'pkcs8',
             base64ToBuffer(ppkText),
-            unwrappingKey,
+            wrappingKey,
             aesAlgo,
-            {
-                name: "RSA-OAEP",
-                modulusLength: 2048,
-                publicExponent: new Uint8Array([1, 0, 1]),
-                hash: "SHA-256",
-            }, 
+            rsaAlgo, 
             true,
             ["decrypt"]
         )
