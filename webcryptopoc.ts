@@ -5,8 +5,11 @@ const algorithmCodeByteLength = 1;
 const ivLength = aes256BlockSize;
 const tagLength = 24; // from half of sha384 (384/2/8)
 
-// const FIXED_ARRAY = [215, 4, 169, 9, 70, 78, 202, 51, 31, 6, 146, 226, 225, 115, 17, 158, 44, 65, 68, 137, 154, 4, 124, 226, 182, 177, 158, 61, 48, 150, 25, 205];
-// const FIXED_ARRAY16 = [78, 27, 238, 163, 112, 200, 84, 93, 183, 58, 101, 218, 37, 131, 14, 212]
+const utf8Decoder = new TextDecoder();
+const utf8Encoder = new TextEncoder();
+
+const FIXED_ARRAY32 = [215, 4, 169, 9, 70, 78, 202, 51, 31, 6, 146, 226, 225, 115, 17, 158, 44, 65, 68, 137, 154, 4, 124, 226, 182, 177, 158, 61, 48, 150, 25, 205];
+const FIXED_ARRAY16 = [78, 27, 238, 163, 112, 200, 84, 93, 183, 58, 101, 218, 37, 131, 14, 212]
 
 async function hmacSha256Async(cek: Uint8Array, type: string, algorithm: string): Promise<ArrayBuffer> {
     const utf8Encoder = new TextEncoder();
@@ -31,8 +34,43 @@ function macKeyFromContentEncryptionKeyAsync(cek: Uint8Array, algorithm: string)
     return hmacSha256Async(cek, 'Microsoft Teams Vault Message Authentication Code Key', algorithm);
 }
 
+function bytesToArrayBuffer(bytes) {
+    const bytesAsArrayBuffer = new ArrayBuffer(bytes.length);
+    const bytesUint8 = new Uint8Array(bytesAsArrayBuffer);
+    bytesUint8.set(bytes);
+    return bytesAsArrayBuffer;
+}
+
+function str2ab(str) {
+    const buf = new ArrayBuffer(str.length);
+    const bufView = new Uint8Array(buf);
+    for (let i = 0, strLen = str.length; i < strLen; i++) {
+        bufView[i] = str.charCodeAt(i);
+    }
+    return buf;
+}
+
 function buf2hex(buf: any): string {
     return Array.prototype.map.call(new Uint8Array(buf), x=>(('00'+x.toString(16)).slice(-2))).join('');
+}
+
+function buf2base64(buf: any) {
+    var binary = '';
+    var bytes = new Uint8Array(buf);
+    var len = bytes.byteLength;
+    for (var i = 0; i < len; i++) {
+        binary += String.fromCharCode( bytes[ i ] );
+    }
+    return window.btoa( binary );
+}
+
+function base64ToBuffer(base64) {
+    var binstr = atob(base64);
+    var buf = new Uint8Array(binstr.length);
+    Array.prototype.forEach.call(binstr, function (ch, i) {
+      buf[i] = ch.charCodeAt(0);
+    });
+    return buf;
 }
 
 function generateRandomVector(fixedVector = null): Uint8Array {
@@ -138,7 +176,7 @@ function equalArray<T>(a: ArrayLike<T>, b: ArrayLike<T>) : boolean
     return true;
 }
 
-/*export*/ async function decryptSymmetric256Async(encryptedMessage: Uint8Array, secretKey: Uint8Array) : Promise<ArrayBuffer> {
+async function decryptSymmetric256Async(encryptedMessage: Uint8Array, secretKey: Uint8Array) : Promise<ArrayBuffer> {
     const message = splitEncryptedMessage(encryptedMessage);
     if (encryptedMessage[0] !== algorithmCode) {
         throw "bad message type. this algorithm can only decode AEAD_AES_256_CBC_HMAC_SHA384";
@@ -169,9 +207,9 @@ function Uint8ArrayFromHex(s: String): Uint8Array{
 //     return Base64FromUint8Array(new Uint8Array(a));
 // }
 
-// function Base64FromUint8Array(a: Uint8Array): string {
-//     return btoa(String.fromCharCode(...a));
-// }
+function Base64FromUint8Array(a: Uint8Array): string {
+    return btoa(String.fromCharCode(...a));
+}
 
 function Uint8ArrayFromBase64(s: string): Uint8Array {
     const b = atob(s);
@@ -179,6 +217,69 @@ function Uint8ArrayFromBase64(s: string): Uint8Array {
     Array.prototype.forEach.call(buffer, (_: any, i : number, a : any[]) => a[i] = b.charCodeAt(i));
     return buffer;
 }
+
+async function generateAsymmetric2048KeyPairAsync() {
+
+}
+
+async function asymmetricKeyTestAsync() : Promise<void> {
+    const secret = generateSymmetric256Key(FIXED_ARRAY32);
+    const passphraseBuf = generateSymmetric256Key(FIXED_ARRAY32);
+    const passphrase = Base64FromUint8Array(passphraseBuf);
+
+    const keyPair = await crypto.subtle.generateKey(
+        {
+            name: "RSA-OAEP",
+            modulusLength: 2048,
+            publicExponent: new Uint8Array([1, 0, 1]),
+            hash: "SHA-256"
+        },
+        true,
+        ["encrypt", "decrypt"]
+    );
+    const publicKey = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
+    const privateKey = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
+    
+    console.log('public key:');
+    console.log(publicKey);
+
+    // console.log('private key:');
+    // console.log(privateKey);
+
+    const plainText = "UUUUU";
+
+    const encryptedPayload = await crypto.subtle.encrypt(
+        { name: "RSA-OAEP" },
+        keyPair.publicKey, //from generateKey or importKey above
+        utf8Encoder.encode(plainText) //ArrayBuffer of data you want to sign
+    );
+
+    console.log(buf2hex(encryptedPayload))
+
+    const decryptedPayload = await crypto.subtle.decrypt(
+        { name: "RSA-OAEP" }, 
+        keyPair.privateKey,
+        encryptedPayload
+    );
+
+    console.log(utf8Decoder.decode(decryptedPayload))
+
+    // return generateAsymmetric2048KeyPairAsync(passphrase).then((keys)=>{
+    //     console.log('public key:');
+    //     console.log(keys.publicKey);
+    //     console.log('private key:');
+    //     console.log(keys.privateKey);
+    //     console.log('private key passphrase: ' + passphrase);
+
+    //     const encryptedPayload = encryptUsingPublicKey(Buffer.from(secret), keys.publicKey);
+    //     console.log(encryptedPayload.toString('base64'));
+    //     const privateKey = decryptPrivateKey(passphrase, keys.privateKey);
+    //     console.log('decrypted secret: ' + decryptUsingPrivateKey(encryptedPayload, privateKey).toString('base64'));
+    //     console.log('original secret:  ' + secret.toString('base64'));
+    //     console.log();
+    // });
+}
+
 
 async function symmetricKeyTestAsync() : Promise<void> {
 
@@ -240,3 +341,5 @@ async function symmetricKeyTestAsync() : Promise<void> {
     }
 }
 
+// symmetricKeyTest();
+asymmetricKeyTestAsync();

@@ -13,40 +13,116 @@
     </head>
 
     <body style="padding: 50px;">
+
         <div class="input-group">
             <div class="input-group-prepend">
                 <span class="input-group-text">Payload</span>
             </div>
             <textarea id="payload" class="form-control" rows="5"></textarea>
-            
         </div>
-
-        <div class="input-group">
-            <div class="input-group-prepend">
-                <span class="input-group-text">Key</span>
-            </div>
-            <input id="key" class="form-control" />
-            <div class="input-group-append">
-                <button id="genKey" type="button" class="btn btn-secondary">Generate Key</button>
-            </div>
-        </div>
-
-        <div class="input-group">
-            <div class="input-group-prepend">
-                <span class="input-group-text">Initialize Vector</span>
-            </div>
-            <input id="vector" class="form-control" />
-            <div class="input-group-append">
-                <button id="genVector" type="button" class="btn btn-secondary">Generate Random Vector</button>
-            </div>
-        </div>
-
         <br/>
 
-        <div style="text-align: right;">
-            <button id="encrypt" type="button" class="btn btn-primary">Encrypt</button>
-            <button id="decrypt" type="button" class="btn btn-primary">Decrypt</button>
-            <button id="roundTrip" type="button" class="btn btn-primary">Rountrip</button>
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="symmetric-tab" data-toggle="tab" href="#symmetric" role="tab" aria-controls="home" aria-selected="true">Symmetric</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="asymmetric-tab" data-toggle="tab" href="#asymmetric" role="tab" aria-controls="profile" aria-selected="false">Asymmetric</a>
+            </li>
+        </ul>
+        <div class="tab-content" id="myTabContent">
+            <div class="tab-pane fade show active" id="symmetric" role="tabpanel" aria-labelledby="home-tab">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Key</span>
+                    </div>
+                    <input id="key" class="form-control" />
+                    <div class="input-group-append">
+                        <button id="genKey" type="button" class="btn btn-secondary">Generate Key</button>
+                    </div>
+                </div>
+        
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Initialize Vector</span>
+                    </div>
+                    <input id="vector" class="form-control" />
+                    <div class="input-group-append">
+                        <button id="genVector" type="button" class="btn btn-secondary">Generate Random Vector</button>
+                    </div>
+                </div>
+
+                <br/>
+                <div style="text-align: right;">
+                    <button id="encrypt" type="button" class="btn btn-primary">Encrypt</button>
+                    <button id="decrypt" type="button" class="btn btn-primary">Decrypt</button>
+                    <button id="roundTrip" type="button" class="btn btn-primary">Rountrip</button>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="asymmetric" role="tabpanel" aria-labelledby="asymmetric-tab">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Public Key</span>
+                    </div>
+                    <textarea id="pub" class="form-control" rows="3">
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuN2wrjziTzUHA0NfM6VU
+Cuk6wJHIrjVNaFM3n9TlXkogSQk2kMQ94bQZJPdESQeeQiZAtdTBbI8Mzwfpt+nT
+K5FX+WjvDhur2ZoQzpl+2BQOXAw5y0nAT7jZHT45BdGd4Hmlv+PkKEj7VYV6euHY
+mE0QYWdRZn63esjj2GJHJRyr0uEWzXbUqrYN4MH1TvhyE8uk3axOVwEO9TPHOnAq
+FQO2AriSETtZnvxaGUxWMtE3ykK8XlWB0NZ5sH+X5QeBFX/UqRi7glNR5yBkI0D4
+M3C6RKkV9Eopb7JY9U+2k5KtldsuxgUMXEuy2eepcF2pS6h4FkVVdcBjKjeYBSJt
+swIDAQAB
+                    </textarea>
+                </div>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Private Key</span>
+                    </div>
+                    <textarea id="ppk" class="form-control" rows="5">
+MIIFLTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIODDAHfjJfzQCAggA
+MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBAR4nD0EKPW8jf7m+QqJ+yqBIIE
+0Gqfmez18vZyWbPBEnGeaqkWE1WWkmxO+z+ISuVqrzf/CCcUzp+JM7eK5yHwpz8d
+ylzmfVXXlVWQjidFHBV0KlB4KymOpjiaEJKFk6DlJ6J4ilrNnpIRjdR5st7WHhTj
+nWevgVmog+LgUwqJqtrH/g4xJJH0WS1dAJ/lMeaum0x4X1oXoHCHNsQQht8oesBC
+KUBmzvu0kIEGaPICxOXby5MH3y2qepg8g2+5v4Wjs8NeIJEjvvqmxDfLNjzP+XMB
+MkYp07OOFnLNuR28fCrhuG3ZoB6dNXDT64lonynT/3DY8iCB9Ff31ikJuHHkWAgV
+mrxUZoXbUBdGeGZiTtYJl5t7KmyvUMvy5aOMS2Oqpc4asDrmPxWyhWWsFGx2Jc7y
+VOTwtFyb44po5x+q81piNi7843TfUapT5bj47uUncV3FhSKOAdIrZebn1G0bTzsy
+s1t0UOkkQ1BdWtP9R3qui6x9/yPrqR0LKMfDBg4N0Rj7IZLlFRsRPS/M5RWtKaTM
+14KQX2d9dkGOtzni34ZnN1wj0Iv2ugKuHc8AafrUoyrTM7pfCxy/nlJWOjRAPPd+
+TlZHm+lJJ+kr8zpc+6E7siNFbWiRZyfcxWR8RPkrazJwCdw+ChxmAdaF4uYpuge+
+XCVkOliS40NSVcczGofuWa/1/czZ7x/UBxagOy7wbtuG/0JmnyKPmVXnbseIeZLO
+BpjQyDGefRQpCQGRgqH17FIkMSK6oMvkbn1diAYGNXgLshsKgWmKO4ZNcJYQldix
+omERWCNnEGVDxkkF/O225oWdq4Bh7zd/DwpkU4fNqQy2kaV0hLfDgNDPXUwqAjku
+BqqdmJveMIrKkkviZ3/fyE0+bFdsPufBN3HikONSFuJWEMDhQOTULdsCt/SVyZJ8
+npbCuarErDmv2BFf6eB/WFjwRQc1UtrNMxMN99kFmKxiwctF+v/FyHELiq0ZM/cB
+GqCoaD3FsnfmxKmOJL/xQhZwcMBnoO4PzzEpIELvsGgddsMbPCmDkM+geoUA51oi
+6d0wya0tAFDloD4lpz4Y+ztlDGCn517Bm3IRHMisi6xiDg125wxnWtlPUyj0bBGF
+CnHnCYano6J++QeT1J1nv6kluTKHDPTc/GIVPbyIQsw6wxc3uzrNaUac5uk28E3G
+sPYpR4TnYWRbr4E3MZF4fijY0AzN1VjztuYLVjEyzgOd9ySBQgjD6GAEXy6hI7N/
+4BIvgyNXZEap+X2LhaZM44DIj1HRVk+apnwHzo1JkQl8hzW48aLnOElm3TIqlbkm
++zKeqZsv3C0mluvvLKZqTHcaq7RRqawv26rpNeGGlT9w5nVbjAV7w97ZXK+Nmw5Q
+4y7zfp6PTip3BKY7OE6FLMWUIRe8UU9IlYAUBui/6ZTkNlwuTthSPcUl/YW/Zs8b
+mcSSCNXRu4t15zHQKhK4PQFNxXGEvh4SYfuU8qwbTfA03BjbzJPRpgyHk8GVik9l
+MSb908CT++deFxinjc42SOdsMsfLDq0rNR0/B0PiVj6n7tTXCB+ZJWoxpp8CsZZi
+HEddx7R8MWvcWoxN0XM7mU1a6sI5dVi0QRHQUsiYKVdhNVOjZU9jGETy95xAZY6+
+0oCcX52LSWbaF0aTiayEPvynQf3+rVz5DpPvcW5jg/V8
+                    </textarea>
+                </div>
+                <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">Passphrase</span>
+                        </div>
+                        <input id="passphrase" class="form-control" value="12345"></input>
+                    </div>
+                <br/>
+                <div style="text-align: right;">
+                    <button id="genKeyPair" type="button" class="btn btn-primary">Generate Keys</button>
+                    <button id="pubEncrypt" type="button" class="btn btn-primary">Encrypt</button>
+                    <button id="ppkDecrypt" type="button" class="btn btn-primary">Decrypt</button>
+                    <button id="asymRoundTrip" type="button" class="btn btn-primary">Rountrip</button>
+                </div>
+            </div>
         </div>
 
         <br/>

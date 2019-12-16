@@ -9,7 +9,8 @@ import {
     publicEncrypt,
     randomBytes,
     KeyObject,
-    RSAKeyPairOptions
+    RSAKeyPairOptions,
+    pbkdf2
 } from 'crypto';
 import {promisify} from 'util';
 
@@ -22,6 +23,9 @@ const ivLength = aes256BlockSize;
 const tagLength = 24; // from half of sha384 (384/2/8)
 const FIXED_ARRAY = [215, 4, 169, 9, 70, 78, 202, 51, 31, 6, 146, 226, 225, 115, 17, 158, 44, 65, 68, 137, 154, 4, 124, 226, 182, 177, 158, 61, 48, 150, 25, 205];
 const FIXED_ARRAY16 = [78, 27, 238, 163, 112, 200, 84, 93, 183, 58, 101, 218, 37, 131, 14, 212]
+
+const utf8Decoder = new TextDecoder();
+const utf8Encoder = new TextEncoder();
 
 function hmacSha256(cek: Buffer, type: string, algorithm: string): Buffer {
     const hmac = createHmac('sha256', cek);
@@ -56,7 +60,7 @@ function messageAuthenticationCodeFromEncryptedSecret(macKey: Buffer, associated
     hmac.update(initializationVector);
     hmac.update(encryptedSecret);
     hmac.update(associatedDataLengthBits);
-    
+
     return hmac.digest().slice(0, tagLength);
 }
 
@@ -217,8 +221,8 @@ function symmetricKeyTest() {
 }
 
 function asymmetricKeyTestAsync() : Promise<void> {
-    const secret = generateSymmetric256Key();
-    const passphrase = generateSymmetric256Key().toString('base64');
+    const secret = "ABCDEF";
+    const passphrase = '12345';
     return generateAsymmetric2048KeyPairAsync(passphrase).then((keys)=>{
         console.log('public key:');
         console.log(keys.publicKey);
@@ -226,16 +230,19 @@ function asymmetricKeyTestAsync() : Promise<void> {
         console.log(keys.privateKey);
         console.log('private key passphrase: ' + passphrase);
 
-        const encryptedPayload = encryptUsingPublicKey(Buffer.from(secret), keys.publicKey);
+        const encryptedPayload = encryptUsingPublicKey(Buffer.from(utf8Encoder.encode(secret)), keys.publicKey);
         console.log(encryptedPayload.toString('base64'));
+        console.log(encryptedPayload.toString('hex'));
         const privateKey = decryptPrivateKey(passphrase, keys.privateKey);
-        console.log('decrypted secret: ' + decryptUsingPrivateKey(encryptedPayload, privateKey).toString('base64'));
-        console.log('original secret:  ' + secret.toString('base64'));
+        console.log('decrypted secret: ' + utf8Decoder.decode(decryptUsingPrivateKey(encryptedPayload, privateKey)));
+        console.log('original secret:  ' + secret );
         console.log();
     });
 }
 
 function ietfTestCase() {
+    console.log("Running")
+
     // verify against known implementation https://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05#section-5.3
     const cipherKey = Buffer.from("18191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031323334353637", "hex");
     const macKey = Buffer.from("000102030405060708090a0b0c0d0e0f1011121314151617", 'hex');
@@ -244,6 +251,7 @@ function ietfTestCase() {
     const secret = Buffer.from("41206369706865722073797374656d206d757374206e6f7420626520726571756972656420746f206265207365637265742c20616e64206974206d7573742062652061626c6520746f2066616c6c20696e746f207468652068616e6473206f662074686520656e656d7920776974686f757420696e636f6e76656e69656e6365", "hex");
     console.log(secret.toString());
 
+
     const associatedDataLengthBits = Buffer.alloc(8);
     associatedDataLengthBits.writeBigUInt64BE(BigInt(associatedData.length*8), 0);
     const expectedAssociatedDataLengthBits = Buffer.from("0000000000000150", "hex");
@@ -251,6 +259,7 @@ function ietfTestCase() {
         console.log('  actual associated data length: ' + associatedDataLengthBits.toString('hex'));
         console.log('expected associated data length: ' + expectedAssociatedDataLengthBits.toString('hex'));
     }
+    
 
     const result = encryptAndTag(cipherKey, macKey, associatedData, initializationVector, secret);
 
@@ -267,13 +276,68 @@ function ietfTestCase() {
     }
 }
 
-symmetricKeyTest();
+// symmetricKeyTest();
 // asymmetricKeyTestAsync().then(() => {
 //     ietfTestCase();
 // });
 
+// asymmetricKeyTestAsync()
 
+const ppk = `-----BEGIN ENCRYPTED PRIVATE KEY-----
+MIIFLTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIODDAHfjJfzQCAggA
+MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBAR4nD0EKPW8jf7m+QqJ+yqBIIE
+0Gqfmez18vZyWbPBEnGeaqkWE1WWkmxO+z+ISuVqrzf/CCcUzp+JM7eK5yHwpz8d
+ylzmfVXXlVWQjidFHBV0KlB4KymOpjiaEJKFk6DlJ6J4ilrNnpIRjdR5st7WHhTj
+nWevgVmog+LgUwqJqtrH/g4xJJH0WS1dAJ/lMeaum0x4X1oXoHCHNsQQht8oesBC
+KUBmzvu0kIEGaPICxOXby5MH3y2qepg8g2+5v4Wjs8NeIJEjvvqmxDfLNjzP+XMB
+MkYp07OOFnLNuR28fCrhuG3ZoB6dNXDT64lonynT/3DY8iCB9Ff31ikJuHHkWAgV
+mrxUZoXbUBdGeGZiTtYJl5t7KmyvUMvy5aOMS2Oqpc4asDrmPxWyhWWsFGx2Jc7y
+VOTwtFyb44po5x+q81piNi7843TfUapT5bj47uUncV3FhSKOAdIrZebn1G0bTzsy
+s1t0UOkkQ1BdWtP9R3qui6x9/yPrqR0LKMfDBg4N0Rj7IZLlFRsRPS/M5RWtKaTM
+14KQX2d9dkGOtzni34ZnN1wj0Iv2ugKuHc8AafrUoyrTM7pfCxy/nlJWOjRAPPd+
+TlZHm+lJJ+kr8zpc+6E7siNFbWiRZyfcxWR8RPkrazJwCdw+ChxmAdaF4uYpuge+
+XCVkOliS40NSVcczGofuWa/1/czZ7x/UBxagOy7wbtuG/0JmnyKPmVXnbseIeZLO
+BpjQyDGefRQpCQGRgqH17FIkMSK6oMvkbn1diAYGNXgLshsKgWmKO4ZNcJYQldix
+omERWCNnEGVDxkkF/O225oWdq4Bh7zd/DwpkU4fNqQy2kaV0hLfDgNDPXUwqAjku
+BqqdmJveMIrKkkviZ3/fyE0+bFdsPufBN3HikONSFuJWEMDhQOTULdsCt/SVyZJ8
+npbCuarErDmv2BFf6eB/WFjwRQc1UtrNMxMN99kFmKxiwctF+v/FyHELiq0ZM/cB
+GqCoaD3FsnfmxKmOJL/xQhZwcMBnoO4PzzEpIELvsGgddsMbPCmDkM+geoUA51oi
+6d0wya0tAFDloD4lpz4Y+ztlDGCn517Bm3IRHMisi6xiDg125wxnWtlPUyj0bBGF
+CnHnCYano6J++QeT1J1nv6kluTKHDPTc/GIVPbyIQsw6wxc3uzrNaUac5uk28E3G
+sPYpR4TnYWRbr4E3MZF4fijY0AzN1VjztuYLVjEyzgOd9ySBQgjD6GAEXy6hI7N/
+4BIvgyNXZEap+X2LhaZM44DIj1HRVk+apnwHzo1JkQl8hzW48aLnOElm3TIqlbkm
++zKeqZsv3C0mluvvLKZqTHcaq7RRqawv26rpNeGGlT9w5nVbjAV7w97ZXK+Nmw5Q
+4y7zfp6PTip3BKY7OE6FLMWUIRe8UU9IlYAUBui/6ZTkNlwuTthSPcUl/YW/Zs8b
+mcSSCNXRu4t15zHQKhK4PQFNxXGEvh4SYfuU8qwbTfA03BjbzJPRpgyHk8GVik9l
+MSb908CT++deFxinjc42SOdsMsfLDq0rNR0/B0PiVj6n7tTXCB+ZJWoxpp8CsZZi
+HEddx7R8MWvcWoxN0XM7mU1a6sI5dVi0QRHQUsiYKVdhNVOjZU9jGETy95xAZY6+
+0oCcX52LSWbaF0aTiayEPvynQf3+rVz5DpPvcW5jg/V8
+-----END ENCRYPTED PRIVATE KEY-----`
 
+const pub = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuN2wrjziTzUHA0NfM6VU
+Cuk6wJHIrjVNaFM3n9TlXkogSQk2kMQ94bQZJPdESQeeQiZAtdTBbI8Mzwfpt+nT
+K5FX+WjvDhur2ZoQzpl+2BQOXAw5y0nAT7jZHT45BdGd4Hmlv+PkKEj7VYV6euHY
+mE0QYWdRZn63esjj2GJHJRyr0uEWzXbUqrYN4MH1TvhyE8uk3axOVwEO9TPHOnAq
+FQO2AriSETtZnvxaGUxWMtE3ykK8XlWB0NZ5sH+X5QeBFX/UqRi7glNR5yBkI0D4
+M3C6RKkV9Eopb7JY9U+2k5KtldsuxgUMXEuy2eepcF2pS6h4FkVVdcBjKjeYBSJt
+swIDAQAB
+-----END PUBLIC KEY-----`
+
+const privateKey = createPrivateKey({key: ppk, format: 'pem', type: 'pkcs8', passphrase: '12345'});
+const publicKey = createPublicKey({key: pub, type: 'spki'})
+const payload = utf8Encoder.encode("123abcdedfdf")
+
+const enc = publicEncrypt(publicKey, payload)
+const d = privateDecrypt(privateKey, enc)
+console.log(utf8Decoder.decode(d))
+
+// const salt = [79, 225, 136, 232, 158, 39, 68, 116, 152, 131, 219, 227, 70, 62, 222, 113];
+
+// pbkdf2('12345', Buffer.from(salt), 10000, 128, 'sha256', (err, derivedKey) => {
+//     if (err) throw err;
+//     console.log(derivedKey.toString('base64'));  // '3745e48...aa39b34'
+// });
 
 // const cbcAlgorithm = 'aes-256-cbc';
 // const encryptedData = Buffer.from("iAqWCtUDyQZ3ggdolHNAhLUw/kHunN8eAtID3Q2/76o=", 'base64');
