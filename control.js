@@ -1,23 +1,23 @@
-const saltBytes = [79, 225, 136, 232, 158, 39, 68, 116, 152, 131, 219, 227, 70, 62, 222, 113];
-// const saltBytes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-const salt = bytesToArrayBuffer(saltBytes);
+// const saltBytes = [79, 225, 136, 232, 158, 39, 68, 116, 152, 131, 219, 227, 70, 62, 222, 113];
+// // const saltBytes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+// const salt = bytesToArrayBuffer(saltBytes);
 
-const ivBytes = [250, 110, 136, 113, 110, 202, 54, 196, 17, 144, 228, 246, 211, 14, 156, 23];
-// const ivBytes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-const iv = bytesToArrayBuffer(ivBytes);
+// const ivBytes = [250, 110, 136, 113, 110, 202, 54, 196, 17, 144, 228, 246, 211, 14, 156, 23];
+// // const ivBytes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+// const iv = bytesToArrayBuffer(ivBytes);
 
-const pbkAlgo = {
-    name: "PBKDF2",
-    salt: salt, 
-    iterations: 100000,
-    hash: "SHA-256"
-}
+// const pbkAlgo = {
+//     name: "PBKDF2",
+//     salt: salt, 
+//     iterations: 100000,
+//     hash: "SHA-256"
+// }
 
-const aesAlgo = { 
-    name: "AES-CBC", 
-    iv: iv, 
-    length: 256
-};
+// const aesAlgo = { 
+//     name: "AES-CBC", 
+//     iv: iv, 
+//     length: 256
+// };
 
 const rsaAlgo = {
     name: "RSA-OAEP",
@@ -28,6 +28,8 @@ const rsaAlgo = {
 
 $( document ).ready(function() {
 
+    $('#deriveKey').click(deriveKey)
+    $('#genSalt').click(generateSalt)
     $('#genKey').click(generateKey)
     $('#genVector').click(generateVector)
 
@@ -40,6 +42,28 @@ $( document ).ready(function() {
     $('#ppkDecrypt').click(runPpkDecrypt)
     $('#asymRoundTrip').click(asymRoundTrip)
 
+    async function deriveKey(e) {
+        const passphrase = $('#payload').val()
+        const saltText = $('#salt').val()
+        const iter = +$('#iter').val()
+        const salt = base64ToBuffer(saltText)
+
+        const start = performance.now();
+        key = await symmetric256KeyFromAsciiPassphraseAsync(passphrase, iter, salt)
+        const end = performance.now();
+
+        var runResult = `
+took ${end-start} ms
+key: ${buf2base64(key)}
+`
+    $('#output').html(runResult)
+
+    }
+
+    async function generateSalt(e) {
+        // salt = 
+    }
+
     async function generateKey(e) {
         const key = generateSymmetric256Key();
         $('#key').val(buf2base64(key))
@@ -50,25 +74,25 @@ $( document ).ready(function() {
         $('#vector').val(buf2base64(vector))
     }
 
-    async function getKeyMaterial(passphrase) {
-        return crypto.subtle.importKey(
-            "raw",
-            utf8Encoder.encode(passphrase),
-            {name: "PBKDF2"},
-            false,
-            ["deriveKey", "deriveKey"]
-        )
-    }
+    // async function getKeyMaterial(passphrase) {
+    //     return crypto.subtle.importKey(
+    //         "raw",
+    //         utf8Encoder.encode(passphrase),
+    //         {name: "PBKDF2"},
+    //         false,
+    //         ["deriveKey", "deriveKey"]
+    //     )
+    // }
 
-    async function getWrappingKey(keyMaterial) {
-        return window.crypto.subtle.deriveKey(
-            pbkAlgo,
-            keyMaterial,
-            aesAlgo,
-            true,
-            [ "wrapKey", "unwrapKey" ]
-          );
-    }
+    // async function getWrappingKey(keyMaterial) {
+    //     return window.crypto.subtle.deriveKey(
+    //         pbkAlgo,
+    //         keyMaterial,
+    //         aesAlgo,
+    //         true,
+    //         [ "wrapKey", "unwrapKey" ]
+    //       );
+    // }
 
     async function generateRSAKeyPair(e) {
         // const passphrase = prompt("Enter your passphrase.")

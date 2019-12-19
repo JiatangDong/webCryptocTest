@@ -302,7 +302,7 @@ function uint8ArrayFromHex(s: String): Uint8Array{
     return new Uint8Array(0);
 }
 
-function hexFromArrayBuffer(a: ArrayBuffer|SharedArrayBuffer): string {
+function hexFromArrayBuffer(a: ArrayBuffer): string {
     return hexFromUint8Array(new Uint8Array(a));
 }
 
@@ -364,7 +364,9 @@ async function symmetricKeyTestAsync() : Promise<void> {
         { plaintext: '0000000000000000', encrypted: 'AYMR7MOQEtFER3VUUk68wTxoWMg+N372smULrlSnMxeMyHc95tiN1N1Ch80O85bPhq03a/b3e0zhs+yxLNiBjBbSQN7onYn/BA==' },
         { plaintext: '97Ahhtgu6RPXFpklQ/lkYS92KmqFO4iPXDBWwTJJdWY=', encrypted: 'AcL76MT/JcYwnGFrIcuI+QYY4D6WEEjFDsLuk/YEsnBiULyIbP5SeD4JG8CdjGjBGD0nCJOVaVYYYd+4ZE2HsukofPJloBIMyuZyO207bxuHKb9n+Nuu5fo=' },
         { plaintext: 'Il faut qu’il n’exige pas le secret, et qu’il puisse sans inconvénient tomber entre les mains de l’ennemi.',
-          encrypted: 'AcL76MT/JcYwnGFrIcuI+Qar0ME5funijgHYXdx71dD+xuMnx8aXelHi3/UiDVI9f1h5lHMvpjGQbJfLhUT5Id7usOAKwf0xpu8jWSFdQojsh2lr7m3GbmkfUu2cdtAIS867yuVueYT0nuM3BpMBle8GhMB1pkl1BBXQmNMVaJHjWUJAT+EnDB+f9jiBfMdpYnddOImcBtmnDqJSiJAL5jpuEI+is0qnF7YN7zeRTD8lD43qosw/Y3Q='}
+          encrypted: 'AcL76MT/JcYwnGFrIcuI+QYEEuqIfzfNENAt/5KBmX4VV1N+qo/+Hfkxvsdbc28JLFTVK5q0QAWllS6PqOjxZWm6ZiRSpBDwkS1RoRI2JQ6B0VdrZuQgGadHEbAzm1+wmhdoAPdKjriYmNBp9fZIYQTwfWZ9+S2dlahpH4DLSyajvo5hHXKUiWxlTbh+VlCzi8Ozx79oAxeq6uIVqRWJHec5CJh1Owpp9w=='},
+        { plaintext: 'Afterall, hello. 后来，你好? 後來，妳好嗎？',
+          encrypted: 'AVc2fbe8c4ff25c6309c614rfGsXal/Vi08VLO0jkIg/z7Ul4pK19kcp0DVJQd0N+kuySQNtjW+BYo/F0+oQWwo1pJ6G7PiKPAvrEhJHsDWuLUc4MpvcaxqJdFWJzZy5xJWue3+n6OAd'}
     ];
     const utf8Decoder = new TextDecoder();
     const utf8Encoder = new TextEncoder();
