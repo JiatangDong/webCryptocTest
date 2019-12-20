@@ -18,15 +18,15 @@ function bytesToArrayBuffer(bytes) {
     return bytesAsArrayBuffer;
 }
 
-function buf2base64(buf: any) {
-    var binary = '';
-    var bytes = new Uint8Array(buf);
-    var len = bytes.byteLength;
-    for (var i = 0; i < len; i++) {
-        binary += String.fromCharCode( bytes[ i ] );
-    }
-    return window.btoa( binary );
-}
+// function buf2base64(buf: any) {
+//     var binary = '';
+//     var bytes = new Uint8Array(buf);
+//     var len = bytes.byteLength;
+//     for (var i = 0; i < len; i++) {
+//         binary += String.fromCharCode( bytes[ i ] );
+//     }
+//     return window.btoa( binary );
+// }
 
 function base64ToBuffer(base64) {
     var binstr = atob(base64);
