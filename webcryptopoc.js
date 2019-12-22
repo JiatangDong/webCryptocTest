@@ -64,38 +64,9 @@ var tagLength = 24; // from half of sha384 (384/2/8)
 var utf8Decoder = new TextDecoder();
 var utf8Encoder = new TextEncoder();
 var FIXED_ARRAY32 = [215, 4, 169, 9, 70, 78, 202, 51, 31, 6, 146, 226, 225, 115, 17, 158, 44, 65, 68, 137, 154, 4, 124, 226, 182, 177, 158, 61, 48, 150, 25, 205];
-function bytesToArrayBuffer(bytes) {
-    var bytesAsArrayBuffer = new ArrayBuffer(bytes.length);
-    var bytesUint8 = new Uint8Array(bytesAsArrayBuffer);
-    bytesUint8.set(bytes);
-    return bytesAsArrayBuffer;
-}
-function buf2base64(buf) {
-    var binary = '';
-    var bytes = new Uint8Array(buf);
-    var len = bytes.byteLength;
-    for (var i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return window.btoa(binary);
-}
-function base64ToBuffer(base64) {
-    var binstr = atob(base64);
-    var buf = new Uint8Array(binstr.length);
-    Array.prototype.forEach.call(binstr, function (ch, i) {
-        buf[i] = ch.charCodeAt(0);
-    });
-    return buf;
-}
-function generateRandomVector(fixedVector) {
-    if (fixedVector === void 0) { fixedVector = null; }
+function generateRandomVector() {
     var buffer = new Uint8Array(ivLength);
-    if (fixedVector != null) {
-        buffer = new Uint8Array(fixedVector);
-    }
-    else {
-        crypto.getRandomValues(buffer);
-    }
+    crypto.getRandomValues(buffer);
     return buffer;
 }
 function hmacSha256Async(cek, type, algorithm) {

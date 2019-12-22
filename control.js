@@ -1,24 +1,3 @@
-// const saltBytes = [79, 225, 136, 232, 158, 39, 68, 116, 152, 131, 219, 227, 70, 62, 222, 113];
-// // const saltBytes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-// const salt = bytesToArrayBuffer(saltBytes);
-
-// const ivBytes = [250, 110, 136, 113, 110, 202, 54, 196, 17, 144, 228, 246, 211, 14, 156, 23];
-// // const ivBytes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-// const iv = bytesToArrayBuffer(ivBytes);
-
-// const pbkAlgo = {
-//     name: "PBKDF2",
-//     salt: salt, 
-//     iterations: 100000,
-//     hash: "SHA-256"
-// }
-
-// const aesAlgo = { 
-//     name: "AES-CBC", 
-//     iv: iv, 
-//     length: 256
-// };
-
 const rsaAlgo = {
     name: "RSA-OAEP",
     modulusLength: 2048,
@@ -29,7 +8,7 @@ const rsaAlgo = {
 $( document ).ready(function() {
 
     $('#genClientKey').click(genClientKey)
-    $('#deriveKey').click(deriveKey)
+    // $('#deriveKey').click(deriveKey)
     $('#genSalt').click(generateSalt)
     $('#genKey').click(generateKey)
     $('#genVector').click(generateVector)
@@ -43,23 +22,23 @@ $( document ).ready(function() {
     $('#ppkDecrypt').click(runPpkDecrypt)
     $('#asymRoundTrip').click(asymRoundTrip)
 
-    async function deriveKey(e) {
-        const passphrase = $('#payload').val()
-        const saltText = $('#salt').val()
-        const iter = +$('#iter').val()
-        const salt = base64ToBuffer(saltText)
+//     async function deriveKey(e) {
+//         const passphrase = $('#payload').val()
+//         const saltText = $('#salt').val()
+//         const iter = +$('#iter').val()
+//         const salt = uint8ArrayFromBase64(saltText)
 
-        const start = performance.now();
-        key = await symmetric256KeyFromAsciiPassphraseAsync(passphrase, iter, salt)
-        const end = performance.now();
+//         const start = performance.now();
+//         key = await symmetric256KeyFromAsciiPassphraseAsync(passphrase, iter, salt)
+//         const end = performance.now();
 
-        var runResult = `
-took ${end-start} ms
-key: ${base64FromArrayBuffer(key)}
-`
-    $('#output').html(runResult)
+//         var runResult = `
+// took ${end-start} ms
+// key: ${base64FromArrayBuffer(key)}
+// `
+//     $('#output').html(runResult)
 
-    }
+//     }
 
     async function genClientKey(e) {
         const clientKey = generateClientKey();
@@ -82,10 +61,13 @@ key: ${base64FromArrayBuffer(key)}
     }
 
     async function generateRSAKeyPair(e) {
+        const clientKey = $('#clientKey').val();
+        const salt = uint8ArrayFromBase64($('#salt').val());
+        const iterations = +$('#iter').val();
         const keyPair = await generateAsymmetric4096KeyPairAsync();
-
+        const passworDecryptedPrivateKey = await passwordEncryptAsync(clientKey, uint8ArrayFromBase64(keyPair.privateKey), iterations, salt);
         $('#pub').val(keyPair.publicKey);
-        $('#ppk').val(keyPair.privateKey);
+        $('#ppk').val(base64FromUint8Array(passworDecryptedPrivateKey));
     }
 
 
@@ -100,7 +82,7 @@ key: ${base64FromArrayBuffer(key)}
             key = generateSymmetric256Key();
             $('#key').val(base64FromUint8Array(key))
         } else {
-            key = base64ToBuffer(keyText)
+            key = uint8ArrayFromBase64(keyText)
         }
 
         var vector
@@ -109,7 +91,7 @@ key: ${base64FromArrayBuffer(key)}
             vector = generateRandomVector();
             $('#vector').val(base64FromUint8Array(vector))
         } else {
-            vector = base64ToBuffer(vectorText)
+            vector = uint8ArrayFromBase64(vectorText)
         }
 
         const encryptedPayload = await encryptSymmetric256Async(buf, key, vector);
@@ -124,7 +106,7 @@ algorithmCode (1 byte): ${message.algorithmCode.toString()}
 
 initializationVector (${message.initializationVector.length} bytes):  ${base64FromUint8Array(message.initializationVector)}
 
-encryptedSecret (${message.encryptedSecret.length} bytes): 
+Encrypted Secret (${message.encryptedSecret.length} bytes): 
 ${base64FromUint8Array(message.encryptedSecret)}
 
 tag (${message.tag.length} bytes): ${base64FromUint8Array(message.tag)}
@@ -143,13 +125,13 @@ ${base64FromUint8Array(encryptedPayload)}
 
     async function runDecrypt(e) {
         $('#output').html('')
-        const payload = base64ToBuffer($('#payload').val());
-        const key = base64ToBuffer($('#key').val())
+        const payload = uint8ArrayFromBase64($('#payload').val());
+        const key = uint8ArrayFromBase64($('#key').val())
         const decryptedPayload = await decryptSymmetric256Async(payload, key);
         const decryptedSecret = utf8Decoder.decode(decryptedPayload)
 
         var runResult = `
-Dencrypted Secret: (${decryptedPayload.byteLength} bytes):
+Decrypted Secret: (${decryptedPayload.byteLength} bytes):
 ${decryptedSecret}
 `
         $('#output').html(runResult)
@@ -170,9 +152,8 @@ round trip success: ${result.secret === decryptedSecret}
         const pubText = $('#pub').val();
         const ppkText = $('#ppk').val();
         const secret = $('#payload').val();
-        // const passphrase = $('#passphrase').val();
 
-        const pub = await importRsa4096PublicKeyAsync(base64ToBuffer(pubText))
+        const pub = await importBase64EncodedRsa4096PublicKeyAsync(pubText);
         
         var encryptedPayload = await crypto.subtle.encrypt(
             {name: 'RSA-OAEP'}, 
@@ -183,7 +164,7 @@ round trip success: ${result.secret === decryptedSecret}
         const encryptedSecret = base64FromArrayBuffer(encryptedPayload)
 
         var runResult = `
-encryptedSecret (${encryptedPayload.byteLength} bytes): 
+Encrypted Secret (${encryptedPayload.byteLength} bytes): 
 ${encryptedSecret}
         `
         
@@ -192,26 +173,36 @@ ${encryptedSecret}
 
     async function ppkDecrypt(secret) {
         const ppkText = $('#ppk').val();
+        const clientKey = $('#clientKey').val();
+        const salt = uint8ArrayFromBase64($('#salt').val());
+        const iterations = +$('#iter').val();
 
-        const ppk = await crypto.subtle.importKey(
-            'pkcs8', 
-            base64ToBuffer(ppkText), 
-            rsaAlgo, 
-            true, 
-            ["decrypt"]
-        )
-        
-        const encryptedPayload = base64ToBuffer(secret);
-        const decryptedPayload = await crypto.subtle.decrypt(
-            {name: 'RSA-OAEP'},
-            ppk,
-            encryptedPayload
-        )
+        const encryptedPPK = uint8ArrayFromBase64(ppkText);
+        const encryptedPPKParts = splitPasswordEncryptedMessage(encryptedPPK);
 
-        decryptedSecret = utf8Decoder.decode(decryptedPayload)
+        const secretBuf = uint8ArrayFromBase64(secret);
 
+        if (!equalArray(salt, encryptedPPKParts.salt)){
+            throw 'bad salt';
+        }
+        if (iterations !== encryptedPPKParts.iterations){
+            throw 'bad iterations';
+        }
+        if (encryptedPPKParts.algorithmCode !== 1) {
+            throw 'bad algorithm code';
+        }
+
+        const decryptionKey = await symmetric256KeyFromAsciiPassphraseAsync(clientKey, iterations, salt);
+        const decryptedPPKBuf = await decryptSymmetric256Async(encryptedPPKParts.encryptedMessage, new Uint8Array(decryptionKey));
+        const decryptedPPK = base64FromArrayBuffer(decryptedPPKBuf)
+        const decryptedPayload = await decryptUsingPrivateKeyAsync(secretBuf, decryptedPPKBuf);
+
+        const decryptedSecret = utf8Decoder.decode(decryptedPayload);
         var runResult = `
-Dencrypted Secret: (${decryptedPayload.byteLength} bytes):
+Decrypted Private Key: 
+${decryptedPPK}
+
+Decrypted Secret: (${decryptedPayload.byteLength} bytes):
 ${decryptedSecret}
         `
         return {runResult, decryptedSecret}
@@ -220,9 +211,9 @@ ${decryptedSecret}
     async function asymRoundTrip() {
         const result = await pubEncrypt();
         const decryptedResult = await ppkDecrypt(result.encryptedSecret);
-        var runResult = result.runResult + `
+        var runResult = result.runResult + decryptedResult.runResult + `
 round trip success: ${result.secret === decryptedResult.decryptedSecret}
-`
+`;
         $('#output').html(runResult)
     }
 
@@ -236,7 +227,5 @@ round trip success: ${result.secret === decryptedResult.decryptedSecret}
         const result = await ppkDecrypt(secret);
         $('#output').html(result.runResult)
     }
-
-
 });
 
