@@ -61,6 +61,14 @@ $( document ).ready(function() {
     }
 
     async function generateRSAKeyPair(e) {
+        if($('#clientKey').val() == '') {
+            genClientKey();
+        }
+
+        if($('#salt').val() == '') {
+            generateSalt()
+        }
+
         const clientKey = $('#clientKey').val();
         const salt = uint8ArrayFromBase64($('#salt').val());
         const iterations = +$('#iter').val();
@@ -70,29 +78,23 @@ $( document ).ready(function() {
         $('#ppk').val(base64FromUint8Array(passworDecryptedPrivateKey));
     }
 
-
-
     async function encrypt() {
+        if ($('#key').val() == '') {
+            generateKey();
+        }
+
+        if ($('#vector').val() == '') {
+            generateVector();
+        }
+
         const secret = $('#payload').val()
         const buf = utf8Encoder.encode(secret);
 
-        var key
         const keyText = $('#key').val();
-        if (keyText == "") {
-            key = generateSymmetric256Key();
-            $('#key').val(base64FromUint8Array(key))
-        } else {
-            key = uint8ArrayFromBase64(keyText)
-        }
+        const key = uint8ArrayFromBase64(keyText)
 
-        var vector
         const vectorText = $('#vector').val();
-        if (vectorText == "") {
-            vector = generateRandomVector();
-            $('#vector').val(base64FromUint8Array(vector))
-        } else {
-            vector = uint8ArrayFromBase64(vectorText)
-        }
+        const vector = uint8ArrayFromBase64(vectorText)
 
         const encryptedPayload = await encryptSymmetric256Async(buf, key, vector);
         const message = splitEncryptedMessage(encryptedPayload);
