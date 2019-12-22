@@ -63,7 +63,7 @@ key: ${base64FromArrayBuffer(key)}
 
     async function genClientKey(e) {
         const clientKey = generateClientKey();
-        $('#payload').val(clientKey);
+        $('#clientKey').val(clientKey);
     }
 
     async function generateSalt(e) {
@@ -81,41 +81,11 @@ key: ${base64FromArrayBuffer(key)}
         $('#vector').val(base64FromUint8Array(vector))
     }
 
-    // async function getKeyMaterial(passphrase) {
-    //     return crypto.subtle.importKey(
-    //         "raw",
-    //         utf8Encoder.encode(passphrase),
-    //         {name: "PBKDF2"},
-    //         false,
-    //         ["deriveKey", "deriveKey"]
-    //     )
-    // }
-
-    // async function getWrappingKey(keyMaterial) {
-    //     return window.crypto.subtle.deriveKey(
-    //         pbkAlgo,
-    //         keyMaterial,
-    //         aesAlgo,
-    //         true,
-    //         [ "wrapKey", "unwrapKey" ]
-    //       );
-    // }
-
     async function generateRSAKeyPair(e) {
-        // const passphrase = prompt("Enter your passphrase.")
-        const passphrase = "12345";
-        const keyPair = await crypto.subtle.generateKey(
-            rsaAlgo,
-            true,
-            ["encrypt", "decrypt"]
-        )
+        const keyPair = await generateAsymmetric4096KeyPairAsync();
 
-        const pub = await crypto.subtle.exportKey('spki', keyPair.publicKey);
-
-        const ppk = await crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
-
-        $('#pub').val(base64FromArrayBuffer(pub));
-        $('#ppk').val(base64FromArrayBuffer(ppk));
+        $('#pub').val(keyPair.publicKey);
+        $('#ppk').val(keyPair.privateKey);
     }
 
 
@@ -176,11 +146,6 @@ ${base64FromUint8Array(encryptedPayload)}
         const payload = base64ToBuffer($('#payload').val());
         const key = base64ToBuffer($('#key').val())
         const decryptedPayload = await decryptSymmetric256Async(payload, key);
-        // const iv = base64ToBuffer($('#vector').val())
-        // const decryptedPayload = await decryptMessageAsync({
-        //     initializationVector: iv,
-        //     encryptedSecret: payload
-        // }, key)
         const decryptedSecret = utf8Decoder.decode(decryptedPayload)
 
         var runResult = `
@@ -207,38 +172,7 @@ round trip success: ${result.secret === decryptedSecret}
         const secret = $('#payload').val();
         // const passphrase = $('#passphrase').val();
 
-        const pub = await crypto.subtle.importKey(
-            'spki', 
-            base64ToBuffer(pubText), 
-            rsaAlgo, 
-            true, 
-            ["encrypt"]
-        )
-        
-        // import none encrypted ppk
-        // const ppk = await crypto.subtle.importKey(
-        //     'pkcs8', 
-        //     base64ToBuffer(ppkText), 
-        //     rsaAlgo, 
-        //     true, 
-        //     ["decrypt"]
-        // )
-
-        // import encrypted ppk-----------------------------------------
-        // const keyMaterial = await getKeyMaterial(passphrase);
-        // const wrappingKey = await getWrappingKey(keyMaterial);
-
-        // const ppk = await crypto.subtle.unwrapKey(
-        //     'pkcs8',
-        //     base64ToBuffer(ppkText),
-        //     wrappingKey,
-        //     aesAlgo,
-        //     rsaAlgo, 
-        //     true,
-        //     ["decrypt"]
-        // )
-        // end import encrypted ppk-----------------------------------------
-
+        const pub = await importRsa4096PublicKeyAsync(base64ToBuffer(pubText))
         
         var encryptedPayload = await crypto.subtle.encrypt(
             {name: 'RSA-OAEP'}, 
@@ -246,17 +180,7 @@ round trip success: ${result.secret === decryptedSecret}
             utf8Encoder.encode(secret)
         )
 
-
-        // console.log(base64FromUint8Array(encryptedPayload))
-
-        // const decryptedPayload = await crypto.subtle.decrypt(
-        //     {name: 'RSA-OAEP'},
-        //     ppk,
-        //     encryptedPayload
-        // )
-
-        // console.log(utf8Decoder.decode(decryptedPayload))
-        const encryptedSecret = base64FromUint8Array(encryptedPayload)
+        const encryptedSecret = base64FromArrayBuffer(encryptedPayload)
 
         var runResult = `
 encryptedSecret (${encryptedPayload.byteLength} bytes): 

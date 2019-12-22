@@ -23,18 +23,18 @@
         <br/>
 
         <ul class="nav nav-tabs" id="myTab" role="tablist">
-            <li class="nav-item">
+            <!-- <li class="nav-item">
                 <a class="nav-link active" id="derive-tab" data-toggle="tab" href="#derive" role="tab" aria-selected="true">Derive</a>
-            </li>
+            </li> -->
             <li class="nav-item">
-                <a class="nav-link" id="symmetric-tab" data-toggle="tab" href="#symmetric" role="tab" aria-selected="false">Symmetric</a>
+                <a class="nav-link active" id="symmetric-tab" data-toggle="tab" href="#symmetric" role="tab" aria-selected="false">Symmetric</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" id="asymmetric-tab" data-toggle="tab" href="#asymmetric" role="tab" aria-controls="profile" aria-selected="false">Asymmetric</a>
             </li>
         </ul>
         <div class="tab-content" id="myTabContent">
-            <div class="tab-pane fade show active" id="derive" role="tabpanel" aria-labelledby="home-tab">
+            <!-- <div class="tab-pane fade show active" id="derive" role="tabpanel" aria-labelledby="home-tab">
                 <div class="input-group">
                     <div class="input-group-prepend">
                         <span class="input-group-text">Salt</span>
@@ -57,8 +57,8 @@
                     <button id="genClientKey" type="button" class="btn btn-primary">Generate genClient Key</button>
                     <button id="deriveKey" type="button" class="btn btn-primary">Derive</button>
                 </div>
-            </div>
-            <div class="tab-pane fade show" id="symmetric" role="tabpanel" aria-labelledby="home-tab">
+            </div> -->
+            <div class="tab-pane fade show active" id="symmetric" role="tabpanel" aria-labelledby="home-tab">
                 <div class="input-group">
                     <div class="input-group-prepend">
                         <span class="input-group-text">Key</span>
@@ -93,6 +93,32 @@
                     </div>
                     <textarea id="pub" class="form-control" rows="3">
                     </textarea>
+                </div>
+                <br/>
+
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Client Key</span>
+                    </div>
+                    <input id="clientKey" class="form-control" />
+                    <div class="input-group-append">
+                        <button id="genClientKey" type="button" class="btn btn-secondary">Generate Client Key</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Salt</span>
+                    </div>
+                    <input id="salt" class="form-control" />
+                    <div class="input-group-append">
+                        <button id="genSalt" type="button" class="btn btn-secondary">Generate Salt</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Iteration</span>
+                    </div>
+                    <input id="iter" class="form-control" value="1000000" />
                 </div>
                 <div class="input-group">
                     <div class="input-group-prepend">
