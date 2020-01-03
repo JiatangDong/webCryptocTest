@@ -184,16 +184,6 @@ ${encryptedSecret}
 
         const secretBuf = uint8ArrayFromBase64(secret);
 
-        if (!equalArray(salt, encryptedPPKParts.salt)){
-            throw 'bad salt';
-        }
-        if (iterations !== encryptedPPKParts.iterations){
-            throw 'bad iterations';
-        }
-        if (encryptedPPKParts.algorithmCode !== 1) {
-            throw 'bad algorithm code';
-        }
-
         const decryptionKey = await symmetric256KeyFromAsciiPassphraseAsync(clientKey, iterations, salt);
         const decryptedPPKBuf = await decryptSymmetric256Async(encryptedPPKParts.encryptedMessage, new Uint8Array(decryptionKey));
         const decryptedPPK = base64FromArrayBuffer(decryptedPPKBuf)
